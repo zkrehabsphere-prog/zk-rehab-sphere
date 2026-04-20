@@ -273,6 +273,120 @@ const EditAppointmentModal = ({ appointment, isOpen, onClose, onUpdated }) => {
   );
 };
 
+// ─── Doctor Detail Modal ──────────────────────────────────────────────────────
+const DoctorDetailModal = ({ doctor, isOpen, onClose }) => {
+  if (!isOpen || !doctor) return null;
+  const expert = doctor.profile;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-8 overflow-y-auto max-h-[90vh]">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <Activity className="text-primary" /> Doctor Profile Details
+          </h2>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"><X /></button>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-8 mb-8">
+          <div className="w-full md:w-48 shrink-0">
+             <img 
+               src={expert?.image?.startsWith('/uploads') ? `${API_BASE}${expert.image}` : expert?.image || doctor.photo || '/placeholder.jpg'} 
+               alt={doctor.name}
+               className="w-full h-48 rounded-2xl object-cover shadow-lg border-2 border-slate-100"
+             />
+             <div className="mt-4 flex flex-col items-center gap-2">
+                <RoleBadge role={doctor.role} />
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${doctor.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  Account: {doctor.isActive !== false ? 'Active' : 'Blocked'}
+                </span>
+             </div>
+          </div>
+
+          <div className="flex-1 space-y-6">
+            <div>
+              <h1 className="text-3xl font-extrabold text-slate-900 mb-1">{doctor.name}</h1>
+              <p className="text-primary font-bold uppercase tracking-widest text-sm">
+                {expert ? `${expert.role} · ${expert.degree}` : 'Account Role: Doctor'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Contact Details</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Mail size={14} className="text-blue-500" /> {doctor.email}
+                    </div>
+                    {doctor.phone && (
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Phone size={14} className="text-green-500" /> {doctor.phone}
+                      </div>
+                    )}
+                  </div>
+               </div>
+               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Internal Meta</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <Shield size={14} className="text-purple-500" /> ID: <span className="font-mono text-[10px]">{doctor._id}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <Clock size={14} className="text-orange-500" /> Experience: {expert?.experience || 'N/A'}
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            {doctor.address && (
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase mb-2">Registered Address</p>
+                <p className="text-slate-600 text-sm italic">{doctor.address}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {expert && (
+          <div className="space-y-6 pt-6 border-t border-slate-100">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Professional Bio</h3>
+              <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{expert.bio}</p>
+            </div>
+
+            {expert.specializations?.length > 0 && (
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-3">Core Specializations</h3>
+                <div className="flex flex-wrap gap-2">
+                  {expert.specializations.map(s => (
+                    <span key={s} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wide">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 mt-10">
+          <a 
+            href={expert ? `/dashboard/admin/experts/edit/${expert._id}` : `/dashboard/admin/experts/new?userId=${doctor._id}`} 
+            className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+          >
+            <Edit size={16} /> {expert ? 'Edit Profile' : 'Create Profile'}
+          </a>
+          <button onClick={onClose} className="px-6 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors">
+            Close View
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
@@ -291,6 +405,9 @@ const AdminDashboard = () => {
 
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [viewingDoctor, setViewingDoctor] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
 
 
   const fetchData = async (tab) => {
@@ -642,23 +759,37 @@ const AdminDashboard = () => {
                         >
                           {expert.isActive !== false ? 'Visible' : 'Hidden'}
                         </button>
-                        <a href={`/dashboard/admin/experts/edit/${expert._id}`} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => { setViewingDoctor(doc); setIsDetailModalOpen(true); }}
+                          className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                          title="View Full Details"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <a href={`/dashboard/admin/experts/edit/${expert._id}`} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Profile">
                           <Edit size={14} />
                         </a>
-                        <button onClick={() => handleDeleteExpert(expert._id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onClick={() => handleDeleteExpert(expert._id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Profile">
                           <Trash2 size={14} />
                         </button>
                       </div>
                     ) : (
-                      <div className="mt-2">
+                      <div className="mt-2 flex gap-2">
                         <a 
                           href={`/dashboard/admin/experts/new?userId=${doc._id}&name=${encodeURIComponent(doc.name)}`}
-                          className="block w-full text-center py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors"
+                          className="flex-1 text-center py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors"
                         >
                           Create Professional Profile
                         </a>
+                        <button 
+                          onClick={() => { setViewingDoctor(doc); setIsDetailModalOpen(true); }}
+                          className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                        >
+                          <Eye size={16} />
+                        </button>
                       </div>
                     )}
+
                   </div>
                 );
               })}
@@ -827,6 +958,11 @@ const AdminDashboard = () => {
         appointment={editingAppointment} 
         onClose={() => setIsEditModalOpen(false)} 
         onUpdated={() => fetchData('appointments')} 
+      />
+      <DoctorDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        doctor={viewingDoctor}
       />
     </div>
   );
