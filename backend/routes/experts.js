@@ -16,7 +16,8 @@ router.get('/', async (req, res, next) => {
     const experts = await Expert.find({ isActive: { $ne: false } })
       .sort({ order: 1, createdAt: 1 })
 
-      .populate('linkedUserId', 'name email photo');
+      .populate('linkedUserId', 'name email photo phone');
+
 
     res.json({ success: true, experts });
   } catch (err) {
@@ -32,7 +33,8 @@ router.get('/all', protect, requireRole('admin'), async (req, res, next) => {
   try {
     const experts = await Expert.find()
       .sort({ order: 1, createdAt: 1 })
-      .populate('linkedUserId', 'name email photo role');
+      .populate('linkedUserId', 'name email photo role phone');
+
 
     res.json({ success: true, experts });
   } catch (err) {

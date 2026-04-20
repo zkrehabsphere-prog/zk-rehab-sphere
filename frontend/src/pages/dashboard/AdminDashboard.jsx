@@ -617,11 +617,22 @@ const AdminDashboard = () => {
                         className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
                       />
                       <div className="flex-1">
-                        <h3 className="font-bold text-slate-800 text-sm">{doc.name}</h3>
-                        <p className="text-slate-500 text-xs">{expert ? expert.role : 'No profile set up'}</p>
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-slate-800 text-sm">{doc.name}</h3>
+                          <RoleBadge role={doc.role} />
+                        </div>
+                        <p className="text-slate-500 text-[10px] truncate mb-1">{doc.email} {doc.phone && `| ${doc.phone}`}</p>
+                        <p className="text-primary font-bold text-[10px] uppercase tracking-wider">
+                          {expert ? `${expert.role} · ${expert.degree}` : 'No Profile Set Up'}
+                        </p>
+                        {expert && (
+                          <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                             <Clock size={10} /> {expert.experience}
+                          </div>
+                        )}
                       </div>
-                      <RoleBadge role={doc.role} />
                     </div>
+
                     
                     {expert ? (
                       <div className="flex items-center gap-2 mt-2">

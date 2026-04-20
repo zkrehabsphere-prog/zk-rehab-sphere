@@ -5,6 +5,10 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import SectionTitle from '../components/SectionTitle';
 import BookingModal from '../components/BookingModal';
+import DoctorCard from '../components/DoctorCard';
+import ExpertBioModal from '../components/ExpertBioModal';
+import { expertsAPI } from '../api/axios';
+
 
 
 import SEO from '../components/SEO';
@@ -15,6 +19,30 @@ import expertNuman from '../assets/expert-numan.jpeg';
 
 const Home = () => {
   const [isBookingOpen, setIsBookingOpen] = React.useState(false);
+  const [experts, setExperts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [selectedExpert, setSelectedExpert] = React.useState(null);
+  const [isBioModalOpen, setIsBioModalOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchExperts = async () => {
+      try {
+        const res = await expertsAPI.getAll();
+        setExperts(res.data.experts || []);
+      } catch (err) {
+        console.error('Failed to load experts:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExperts();
+  }, []);
+
+  const handleViewProfile = (expert) => {
+    setSelectedExpert(expert);
+    setIsBioModalOpen(true);
+  };
+
 
   return (
     <div className="w-full">
@@ -170,24 +198,21 @@ const Home = () => {
           <SectionTitle title="Meet Our Experts" subtitle="Guided by experienced professionals." />
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-10 lg:mb-16">
-            {[
-              { name: "Dr. Mehul Kumar", role: "Senior Physiotherapist", img: expertMehul, desc: "Specialist in sports injuries and orthopedic rehabilitation with 3+ years of experience. BPT.", position: "object-top" },
-              { name: "Dr. Mani Bhusan PT", role: "Physiotherapist", img: expertMani, desc: "Expert in neurological rehabilitation and patient care management with 2+ years of experience. BPT.", position: "object-top" },
-              { name: "Dr.Mohammad Numan PT", role: "Physiotherapist", img: expertNuman, desc: "Dedicated physiotherapist with experience in patient care and rehabilitation. BPT.", position: "object-top" },
-            ].slice(0, 3).map((expert, index) => (
-              <Card key={index} className="text-center group p-0 overflow-hidden border-none hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="relative h-64 overflow-hidden">
-                      <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors z-10"></div>
-                      <img src={expert.img} alt={expert.name} className={`w-full h-full object-cover ${expert.position || 'object-top'} transform group-hover:scale-110 transition-transform duration-700`} />
-                  </div>
-                  <div className="p-8">
-                      <h3 className="text-xl font-bold mb-1 text-primary-dark group-hover:text-primary transition-colors">{expert.name}</h3>
-                      <p className="text-secondary font-medium mb-4 uppercase text-xs tracking-wider">{expert.role}</p>
-                      <p className="text-slate-500 text-sm leading-relaxed">{expert.desc}</p>
-                  </div>
-              </Card>
-            ))}
+            {loading ? (
+              <div className="col-span-full text-center py-12 text-slate-500">Loading doctors...</div>
+            ) : experts.length > 0 ? (
+              experts.slice(0, 3).map((expert) => (
+                <DoctorCard 
+                  key={expert._id} 
+                  doctor={expert} 
+                  onViewProfile={handleViewProfile} 
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12 text-slate-500">No doctors found.</div>
+            )}
           </div>
+
           
           <div className="text-center">
             <Link to="/experts">
@@ -296,7 +321,14 @@ const Home = () => {
         isOpen={isBookingOpen} 
         onClose={() => setIsBookingOpen(false)} 
       />
+
+      <ExpertBioModal
+        isOpen={isBioModalOpen}
+        onClose={() => setIsBioModalOpen(false)}
+        expert={selectedExpert}
+      />
     </div>
+
   );
 };
 
