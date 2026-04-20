@@ -13,8 +13,9 @@ const router = express.Router();
  */
 router.get('/', async (req, res, next) => {
   try {
-    const experts = await Expert.find({ isActive: true })
+    const experts = await Expert.find({ isActive: { $ne: false } })
       .sort({ order: 1, createdAt: 1 })
+
       .populate('linkedUserId', 'name email photo');
 
     res.json({ success: true, experts });

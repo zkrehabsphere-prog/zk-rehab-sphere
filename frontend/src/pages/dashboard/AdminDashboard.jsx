@@ -285,7 +285,8 @@ const AdminDashboard = () => {
   const [subscribers, setSubscribers] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [roleFilter, setRoleFilter] = useState('patient'); // Default to patients
+  const [roleFilter, setRoleFilter] = useState(''); // Default to All users to avoid confusion
+
 
 
   const [editingAppointment, setEditingAppointment] = useState(null);
@@ -306,8 +307,20 @@ const AdminDashboard = () => {
         setSlots(slotsRes.data.slots || []);
         setDoctors(usersRes.data.users || []);
       } else if (tab === 'experts') {
-        const res = await expertsAPI.getAllAdmin();
-        setExperts(res.data.experts || []);
+        // Fetch all users with role 'doctor' AND all expert profiles
+        const [usersRes, expertsRes] = await Promise.all([
+          usersAPI.getAll({ role: 'doctor', limit: 100 }),
+          expertsAPI.getAllAdmin()
+        ]);
+        
+        // Merge them: Each doctor user might have a profile
+        const allDoctors = (usersRes.data.users || []).map(u => {
+          const profile = (expertsRes.data.experts || []).find(e => e.linkedUserId?._id === u._id || e.linkedUserId === u._id);
+          return { ...u, profile };
+        });
+        
+        setExperts(allDoctors);
+
       } else if (tab === 'users') {
         const res = await usersAPI.getAll({ role: roleFilter, limit: 100 });
         setUsers(res.data.users || []);
@@ -593,35 +606,54 @@ const AdminDashboard = () => {
               </a>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {experts.map((expert) => (
-                <div key={expert._id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-3">
-                    <img
-                      src={expert.image?.startsWith('/uploads') ? `${API_BASE}${expert.image}` : expert.image || '/placeholder.jpg'}
-                      alt={expert.name}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
-                    />
-                    <div>
-                      <h3 className="font-bold text-slate-800 text-sm">{expert.name}</h3>
-                      <p className="text-slate-500 text-xs">{expert.role}</p>
+              {experts.map((doc) => {
+                const expert = doc.profile;
+                return (
+                  <div key={doc._id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3 mb-3">
+                      <img
+                        src={expert?.image?.startsWith('/uploads') ? `${API_BASE}${expert.image}` : expert?.image || doc.photo || '/placeholder.jpg'}
+                        alt={doc.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-bold text-slate-800 text-sm">{doc.name}</h3>
+                        <p className="text-slate-500 text-xs">{expert ? expert.role : 'No profile set up'}</p>
+                      </div>
+                      <RoleBadge role={doc.role} />
                     </div>
+                    
+                    {expert ? (
+                      <div className="flex items-center gap-2 mt-2">
+                        <button 
+                          onClick={() => handleToggleExpertActive(expert)}
+                          className={`flex-1 text-center py-1 rounded-lg text-xs font-semibold transition-colors ${expert.isActive !== false ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        >
+                          {expert.isActive !== false ? 'Visible' : 'Hidden'}
+                        </button>
+                        <a href={`/dashboard/admin/experts/edit/${expert._id}`} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                          <Edit size={14} />
+                        </a>
+                        <button onClick={() => handleDeleteExpert(expert._id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <a 
+                          href={`/dashboard/admin/experts/new?userId=${doc._id}&name=${encodeURIComponent(doc.name)}`}
+                          className="block w-full text-center py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors"
+                        >
+                          Create Professional Profile
+                        </a>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <button 
-                      onClick={() => handleToggleExpertActive(expert)}
-                      className={`flex-1 text-center py-1 rounded-lg text-xs font-semibold transition-colors ${expert.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                    >
-                      {expert.isActive ? 'Visible (Active)' : 'Hidden (Inactive)'}
-                    </button>
-                    <button onClick={() => handleDeleteExpert(expert._id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-
-                </div>
-              ))}
+                );
+              })}
             </div>
-            {experts.length === 0 && <p className="text-center text-slate-400 py-10">No doctor profiles yet. Add from the button above.</p>}
+            {experts.length === 0 && <p className="text-center text-slate-400 py-10">No doctor accounts found. Create a user with the 'doctor' role first.</p>}
+
           </div>
         )}
 
