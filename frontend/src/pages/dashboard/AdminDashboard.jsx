@@ -272,11 +272,12 @@ const EditAppointmentModal = ({ appointment, isOpen, onClose, onUpdated }) => {
     </div>
   );
 };
-
-// ─── Doctor Detail Modal ──────────────────────────────────────────────────────
-const DoctorDetailModal = ({ doctor, isOpen, onClose }) => {
-  if (!isOpen || !doctor) return null;
-  const expert = doctor.profile;
+  
+// ─── User Detail Modal ──────────────────────────────────────────────────────
+const UserDetailModal = ({ user, isOpen, onClose }) => {
+  if (!isOpen || !user) return null;
+  const expert = user.profile;
+  const isDoctor = user.role === 'doctor';
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -284,7 +285,8 @@ const DoctorDetailModal = ({ doctor, isOpen, onClose }) => {
       <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-8 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Activity className="text-primary" /> Doctor Profile Details
+            {isDoctor ? <Activity className="text-primary" /> : <UserCheck className="text-green-500" />}
+            {isDoctor ? 'Doctor Profile Details' : 'Patient Account Details'}
           </h2>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"><X /></button>
         </div>
@@ -292,23 +294,23 @@ const DoctorDetailModal = ({ doctor, isOpen, onClose }) => {
         <div className="flex flex-col md:flex-row gap-8 mb-8">
           <div className="w-full md:w-48 shrink-0">
              <img 
-               src={expert?.image?.startsWith('/uploads') ? `${API_BASE}${expert.image}` : expert?.image || doctor.photo || '/placeholder.jpg'} 
-               alt={doctor.name}
+               src={expert?.image?.startsWith('/uploads') ? `${API_BASE}${expert.image}` : expert?.image || user.photo || '/placeholder.jpg'} 
+               alt={user.name}
                className="w-full h-48 rounded-2xl object-cover shadow-lg border-2 border-slate-100"
              />
              <div className="mt-4 flex flex-col items-center gap-2">
-                <RoleBadge role={doctor.role} />
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${doctor.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  Account: {doctor.isActive !== false ? 'Active' : 'Blocked'}
+                <RoleBadge role={user.role} />
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  Account: {user.isActive !== false ? 'Active' : 'Blocked'}
                 </span>
              </div>
           </div>
 
           <div className="flex-1 space-y-6">
             <div>
-              <h1 className="text-3xl font-extrabold text-slate-900 mb-1">{doctor.name}</h1>
+              <h1 className="text-3xl font-extrabold text-slate-900 mb-1">{user.name}</h1>
               <p className="text-primary font-bold uppercase tracking-widest text-sm">
-                {expert ? `${expert.role} · ${expert.degree}` : 'Account Role: Doctor'}
+                {isDoctor && expert ? `${expert.role} · ${expert.degree}` : `Role: ${user.role}`}
               </p>
             </div>
 
@@ -317,11 +319,11 @@ const DoctorDetailModal = ({ doctor, isOpen, onClose }) => {
                   <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Contact Details</p>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Mail size={14} className="text-blue-500" /> {doctor.email}
+                      <Mail size={14} className="text-blue-500" /> {user.email}
                     </div>
-                    {doctor.phone && (
+                    {user.phone && (
                       <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Phone size={14} className="text-green-500" /> {doctor.phone}
+                        <Phone size={14} className="text-green-500" /> {user.phone}
                       </div>
                     )}
                   </div>
@@ -330,25 +332,26 @@ const DoctorDetailModal = ({ doctor, isOpen, onClose }) => {
                   <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Internal Meta</p>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-slate-600">
-                      <Shield size={14} className="text-purple-500" /> ID: <span className="font-mono text-[10px]">{doctor._id}</span>
+                      <Shield size={14} className="text-purple-500" /> ID: <span className="font-mono text-[10px]">{user._id}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-600">
-                      <Clock size={14} className="text-orange-500" /> Experience: {expert?.experience || 'N/A'}
+                      <Clock size={14} className="text-orange-500" /> 
+                      {isDoctor ? `Experience: ${expert?.experience || 'N/A'}` : `Joined: ${new Date(user.createdAt).toLocaleDateString()}`}
                     </div>
                   </div>
                </div>
             </div>
 
-            {doctor.address && (
+            {user.address && (
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase mb-2">Registered Address</p>
-                <p className="text-slate-600 text-sm italic">{doctor.address}</p>
+                <p className="text-slate-600 text-sm italic">{user.address}</p>
               </div>
             )}
           </div>
         </div>
 
-        {expert && (
+        {isDoctor && expert && (
           <div className="space-y-6 pt-6 border-t border-slate-100">
             <div>
               <h3 className="text-lg font-bold text-slate-800 mb-2">Professional Bio</h3>
@@ -371,12 +374,14 @@ const DoctorDetailModal = ({ doctor, isOpen, onClose }) => {
         )}
 
         <div className="flex justify-end gap-3 mt-10">
-          <a 
-            href={expert ? `/dashboard/admin/experts/edit/${expert._id}` : `/dashboard/admin/experts/new?userId=${doctor._id}`} 
-            className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
-          >
-            <Edit size={16} /> {expert ? 'Edit Profile' : 'Create Profile'}
-          </a>
+          {isDoctor && (
+            <a 
+              href={expert ? `/dashboard/admin/experts/edit/${expert._id}` : `/dashboard/admin/experts/new?userId=${user._id}`} 
+              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+            >
+              <Edit size={16} /> {expert ? 'Edit Profile' : 'Create Profile'}
+            </a>
+          )}
           <button onClick={onClose} className="px-6 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors">
             Close View
           </button>
@@ -385,6 +390,7 @@ const DoctorDetailModal = ({ doctor, isOpen, onClose }) => {
     </div>
   );
 };
+
 
 
 const AdminDashboard = () => {
@@ -399,14 +405,16 @@ const AdminDashboard = () => {
   const [subscribers, setSubscribers] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [roleFilter, setRoleFilter] = useState(''); // Default to All users to avoid confusion
+  const [roleFilter, setRoleFilter] = useState('patient'); // Reverting back to patient as default for this section
+
 
 
 
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [viewingDoctor, setViewingDoctor] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
 
 
 
@@ -473,6 +481,12 @@ const AdminDashboard = () => {
       setUsers(prev => prev.map(u => u._id === userId ? { ...u, isActive: newStatus } : u));
     } catch (err) { alert(err.message); }
   };
+
+  const handleViewUser = (u) => {
+    setViewingUser(u);
+    setIsDetailModalOpen(true);
+  };
+
 
   const handleDeleteUser = async (userId) => {
     if (!confirm('PERMANENTLY delete this user account? This cannot be undone.')) return;
@@ -760,12 +774,13 @@ const AdminDashboard = () => {
                           {expert.isActive !== false ? 'Visible' : 'Hidden'}
                         </button>
                         <button 
-                          onClick={() => { setViewingDoctor(doc); setIsDetailModalOpen(true); }}
+                          onClick={() => handleViewUser(doc)}
                           className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
                           title="View Full Details"
                         >
                           <Eye size={14} />
                         </button>
+
                         <a href={`/dashboard/admin/experts/edit/${expert._id}`} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Profile">
                           <Edit size={14} />
                         </a>
@@ -782,11 +797,12 @@ const AdminDashboard = () => {
                           Create Professional Profile
                         </a>
                         <button 
-                          onClick={() => { setViewingDoctor(doc); setIsDetailModalOpen(true); }}
+                          onClick={() => handleViewUser(doc)}
                           className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
                         >
                           <Eye size={16} />
                         </button>
+
                       </div>
                     )}
 
@@ -854,7 +870,15 @@ const AdminDashboard = () => {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button 
+                            onClick={() => handleViewUser(u)}
+                            className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                            title="View Account Details"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button 
                             onClick={() => handleToggleActive(u._id, u.isActive !== false)}
+
                             className={`p-1.5 rounded-lg transition-colors ${u.isActive !== false ? 'text-orange-500 hover:bg-orange-50' : 'text-green-500 hover:bg-green-50'}`}
                             title={u.isActive !== false ? 'Block User' : 'Unblock User'}
                           >
@@ -959,11 +983,12 @@ const AdminDashboard = () => {
         onClose={() => setIsEditModalOpen(false)} 
         onUpdated={() => fetchData('appointments')} 
       />
-      <DoctorDetailModal
+      <UserDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        doctor={viewingDoctor}
+        user={viewingUser}
       />
+
     </div>
   );
 };
