@@ -21,6 +21,9 @@ const userRoutes = require('./routes/users');
 
 const app = express();
 
+// Required for Vercel deployment: Trust the Vercel proxy headers
+app.set('trust proxy', 1);
+
 // Connect to MongoDB
 connectDB();
 
