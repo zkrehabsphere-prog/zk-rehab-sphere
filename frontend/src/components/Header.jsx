@@ -80,9 +80,12 @@ const Header = () => {
           <div className="hidden lg:flex items-center gap-3 shrink-0">
             {isAuthenticated && user ? (
               <>
-                <Button variant="outline-primary" size="sm" onClick={() => setIsBookingOpen(true)}>
-                  Book Appointment
-                </Button>
+                {user.role === 'patient' && (
+                  <Button variant="outline-primary" size="sm" onClick={() => setIsBookingOpen(true)}>
+                    Book Appointment
+                  </Button>
+                )}
+
 
                 {/* User Menu */}
                 <div className="relative" data-user-menu>
@@ -168,7 +171,10 @@ const Header = () => {
                 >
                   <LayoutDashboard size={18} /> Dashboard
                 </Link>
-                <Button onClick={() => { setIsMobileMenuOpen(false); setIsBookingOpen(true); }} className="w-full justify-center">Book Appointment</Button>
+                {user.role === 'patient' && (
+                  <Button onClick={() => { setIsMobileMenuOpen(false); setIsBookingOpen(true); }} className="w-full justify-center">Book Appointment</Button>
+                )}
+
                 <button
                   onClick={logout}
                   className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors"

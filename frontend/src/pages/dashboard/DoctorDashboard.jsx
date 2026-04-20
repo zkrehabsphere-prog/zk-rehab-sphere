@@ -94,6 +94,22 @@ const AddSlotForm = ({ user, onCreated }) => {
         <div className="flex flex-wrap gap-2">
           {AVAILABLE_TIMES.map(time => {
             const isSelected = form.times.includes(time);
+            
+            // Check if time is in the past for today
+            let isPast = false;
+            if (form.date === new Date().toISOString().split('T')[0]) {
+              const [hStr, mStr] = time.split(' ')[0].split(':');
+              const mod = time.split(' ')[1];
+              let h = parseInt(hStr);
+              if (mod === 'PM' && h < 12) h += 12;
+              if (mod === 'AM' && h === 12) h = 0;
+              const slotTime = new Date();
+              slotTime.setHours(h, parseInt(mStr), 0, 0);
+              isPast = slotTime < new Date();
+            }
+
+            if (isPast) return null;
+
             return (
               <button
                 type="button"
@@ -109,6 +125,7 @@ const AddSlotForm = ({ user, onCreated }) => {
               </button>
             );
           })}
+
         </div>
       </div>
       

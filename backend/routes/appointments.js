@@ -239,6 +239,35 @@ router.patch('/:id/status', protect, requireRole('admin', 'doctor'), async (req,
 });
 
 /**
+ * PATCH /api/appointments/:id
+ * Admin only: Edit appointment details
+ */
+router.patch('/:id', protect, requireRole('admin'), async (req, res, next) => {
+  try {
+    const { patientName, patientAge, patientPhone, patientAddress, purpose } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found.' });
+
+    if (patientName) appointment.patientName = patientName;
+    if (patientAge) appointment.patientAge = Number(patientAge);
+    if (patientPhone) appointment.patientPhone = patientPhone;
+    if (patientAddress) appointment.patientAddress = patientAddress;
+    if (purpose !== undefined) appointment.purpose = purpose;
+
+    await appointment.save();
+
+    res.json({
+      success: true,
+      message: 'Appointment updated successfully.',
+      appointment,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/**
  * DELETE /api/appointments/:id
  * Admin only: Hard delete an appointment
  */

@@ -187,6 +187,90 @@ const AddSlotForm = ({ doctors, onCreated }) => {
 };
 
 // ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Edit Appointment Modal ───────────────────────────────────────────────────
+const EditAppointmentModal = ({ appointment, isOpen, onClose, onUpdated }) => {
+  const [form, setForm] = useState({
+    patientName: '',
+    patientAge: '',
+    patientPhone: '',
+    patientAddress: '',
+    purpose: '',
+  });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (appointment) {
+      setForm({
+        patientName: appointment.patientName || '',
+        patientAge: appointment.patientAge || '',
+        patientPhone: appointment.patientPhone || '',
+        patientAddress: appointment.patientAddress || '',
+        purpose: appointment.purpose || '',
+      });
+    }
+  }, [appointment, isOpen]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await appointmentsAPI.update(appointment._id, form);
+      onUpdated();
+      onClose();
+    } catch (err) {
+      alert(`Update failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 overflow-y-auto max-h-[90vh]">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-slate-800">Edit Appointment</h2>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"><X /></button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Patient Name</label>
+            <input required type="text" value={form.patientName} onChange={e => setForm({...form, patientName: e.target.value})} className="w-full border border-slate-200 rounded-lg px-4 py-2 focus:border-primary outline-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Age</label>
+              <input required type="number" value={form.patientAge} onChange={e => setForm({...form, patientAge: e.target.value})} className="w-full border border-slate-200 rounded-lg px-4 py-2 focus:border-primary outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Phone</label>
+              <input required type="text" value={form.patientPhone} onChange={e => setForm({...form, patientPhone: e.target.value})} className="w-full border border-slate-200 rounded-lg px-4 py-2 focus:border-primary outline-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Address</label>
+            <textarea required value={form.patientAddress} onChange={e => setForm({...form, patientAddress: e.target.value})} className="w-full border border-slate-200 rounded-lg px-4 py-2 focus:border-primary outline-none min-h-[80px]" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Purpose / Condition</label>
+            <textarea value={form.purpose} onChange={e => setForm({...form, purpose: e.target.value})} className="w-full border border-slate-200 rounded-lg px-4 py-2 focus:border-primary outline-none min-h-[80px]" />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button type="button" onClick={onClose} className="px-6 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
+            <button type="submit" disabled={loading} className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50">
+                {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
@@ -199,6 +283,10 @@ const AdminDashboard = () => {
   const [subscribers, setSubscribers] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [editingAppointment, setEditingAppointment] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
 
   const fetchData = async (tab) => {
     setLoading(true);
@@ -253,7 +341,13 @@ const AdminDashboard = () => {
     } catch (err) { alert(err.message); }
   };
 
+  const handleEditClick = (apt) => {
+    setEditingAppointment(apt);
+    setIsEditModalOpen(true);
+  };
+
   const handleDeleteAppointment = async (id) => {
+
     if (!confirm('Are you sure you want to PERMANENTLY delete this appointment? This cannot be undone.')) return;
     try {
         await appointmentsAPI.delete(id);
@@ -386,6 +480,13 @@ const AdminDashboard = () => {
                             {['pending', 'confirmed', 'cancelled', 'completed'].map(s => <option key={s} value={s}>{s}</option>)}
                           </select>
                           <button 
+                            onClick={() => handleEditClick(apt)}
+                            className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Appointment"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button 
                             onClick={() => handleDeleteAppointment(apt._id)}
                             className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete Appointment"
@@ -394,6 +495,7 @@ const AdminDashboard = () => {
                           </button>
                         </div>
                       </td>
+
 
                     </tr>
                   ))}
@@ -604,8 +706,16 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+
+      <EditAppointmentModal 
+        isOpen={isEditModalOpen} 
+        appointment={editingAppointment} 
+        onClose={() => setIsEditModalOpen(false)} 
+        onUpdated={() => fetchData('appointments')} 
+      />
     </div>
   );
 };
+
 
 export default AdminDashboard;
