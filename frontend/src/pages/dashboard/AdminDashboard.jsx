@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Calendar, MessageSquare, BookOpen, Activity,
   UserCheck, Bell, Trash2, Eye, CheckCircle, XCircle,
-  Clock, ChevronDown, Plus, Shield, Edit, BarChart2, Mail, RefreshCw
+  Clock, ChevronDown, Plus, Shield, Edit, BarChart2, Mail, RefreshCw, X
 } from 'lucide-react';
+
 import { useAuth } from '../../context/AuthContext';
 import { usersAPI, appointmentsAPI, contactAPI, expertsAPI, slotsAPI, newsletterAPI } from '../../api/axios';
 import SEO from '../../components/SEO';
