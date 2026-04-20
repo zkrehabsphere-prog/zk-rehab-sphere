@@ -3,6 +3,8 @@ const Slot = require('../models/Slot');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
+const { getISTTodayStr, isSlotInPast } = require('../utils/timeUtils');
+
 
 const router = express.Router();
 
@@ -43,21 +45,34 @@ router.get('/', async (req, res, next) => {
  */
 router.get('/available', async (req, res, next) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const slots = await Slot.find({
+    const today = getISTTodayStr();
+    
+    // 1. Fetch potentially available slots (today onwards)
+    let slots = await Slot.find({
       isBooked: false,
       isActive: true,
       date: { $gte: today },
     })
       .populate('doctor', 'name photo')
-      .sort({ date: 1, time: 1 })
-      .limit(50);
+      .sort({ date: 1, time: 1 });
 
-    res.json({ success: true, slots });
+    // 2. Identify and DELETE past slots (Auto-Cleanup)
+    const pastSlotIds = slots
+      .filter(slot => isSlotInPast(slot.date, slot.time))
+      .map(slot => slot._id);
+
+    if (pastSlotIds.length > 0) {
+      await Slot.deleteMany({ _id: { $in: pastSlotIds } });
+      // Remove them from the local list being returned
+      slots = slots.filter(slot => !pastSlotIds.includes(slot._id));
+    }
+
+    res.json({ success: true, slots: slots.slice(0, 50) });
   } catch (err) {
     next(err);
   }
 });
+
 
 /**
  * POST /api/slots
@@ -84,12 +99,25 @@ router.post('/', protect, requireRole('admin', 'doctor'), async (req, res, next)
       return res.status(400).json({ error: 'Invalid doctor ID.' });
     }
 
-    // Create slots (skip duplicates via insertMany with ordered: false)
-    const slotsToCreate = times.map((time) => ({
-      doctor: resolvedDoctorId,
-      date,
-      time: time.trim(),
-    }));
+    // Validate that the date is not in the past
+    const today = getISTTodayStr();
+    if (date < today) {
+        return res.status(400).json({ error: 'Cannot create slots for a past date.' });
+    }
+
+    // Create slots (skip duplicates and SKIP PAST TIMES for today)
+    const slotsToCreate = times
+      .map(time => time.trim())
+      .filter(time => !isSlotInPast(date, time)) // Filter out past times for today
+      .map((time) => ({
+        doctor: resolvedDoctorId,
+        date,
+        time,
+      }));
+
+    if (slotsToCreate.length === 0 && times.length > 0) {
+        return res.status(400).json({ error: 'All provided times have already passed for today.' });
+    }
 
     let created = [];
     let duplicates = 0;
@@ -102,6 +130,7 @@ router.post('/', protect, requireRole('admin', 'doctor'), async (req, res, next)
         else throw e;
       }
     }
+
 
     res.status(201).json({
       success: true,

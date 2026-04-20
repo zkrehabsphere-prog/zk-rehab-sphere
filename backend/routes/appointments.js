@@ -9,6 +9,8 @@ const {
   sendBookingNotification,
   sendStatusUpdate,
 } = require('../utils/email');
+const { isSlotInPast } = require('../utils/timeUtils');
+
 
 const router = express.Router();
 
@@ -30,6 +32,12 @@ router.post('/', protect, async (req, res, next) => {
     if (!slot) return res.status(404).json({ error: 'Slot not found.' });
     if (slot.isBooked) return res.status(409).json({ error: 'This slot is already booked. Please choose another.' });
     if (!slot.isActive) return res.status(400).json({ error: 'This slot is no longer available.' });
+
+    // Ensure slot hasn't passed
+    if (isSlotInPast(slot.date, slot.time)) {
+        return res.status(400).json({ error: 'This appointment time has already passed.' });
+    }
+
 
     // Check patient hasn't already booked this slot
     const existing = await Appointment.findOne({ patient: req.user._id, slot: slotId });

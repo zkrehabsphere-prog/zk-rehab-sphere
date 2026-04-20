@@ -142,6 +142,22 @@ const AddSlotForm = ({ doctors, onCreated }) => {
         <div className="flex flex-wrap gap-2">
           {AVAILABLE_TIMES.map(time => {
             const isSelected = form.times.includes(time);
+            
+            // Check if time is in the past for today
+            let isPast = false;
+            if (form.date === new Date().toISOString().split('T')[0]) {
+              const [hStr, mStr] = time.split(' ')[0].split(':');
+              const mod = time.split(' ')[1];
+              let h = parseInt(hStr);
+              if (mod === 'PM' && h < 12) h += 12;
+              if (mod === 'AM' && h === 12) h = 0;
+              const slotTime = new Date();
+              slotTime.setHours(h, parseInt(mStr), 0, 0);
+              isPast = slotTime < new Date();
+            }
+
+            if (isPast) return null;
+
             return (
               <button
                 type="button"
@@ -157,6 +173,7 @@ const AddSlotForm = ({ doctors, onCreated }) => {
               </button>
             );
           })}
+
         </div>
       </div>
       
@@ -226,11 +243,25 @@ const AdminDashboard = () => {
   };
 
   const handleAppointmentStatus = async (id, status) => {
+    let cancelReason = '';
+    if (status === 'cancelled') {
+        cancelReason = prompt('Reason for cancellation (optional):') || 'Cancelled by Admin';
+    }
     try {
-      await appointmentsAPI.updateStatus(id, { status });
+      await appointmentsAPI.updateStatus(id, { status, cancelReason });
       setAppointments(prev => prev.map(a => a._id === id ? { ...a, status } : a));
     } catch (err) { alert(err.message); }
   };
+
+  const handleDeleteAppointment = async (id) => {
+    if (!confirm('Are you sure you want to PERMANENTLY delete this appointment? This cannot be undone.')) return;
+    try {
+        await appointmentsAPI.delete(id);
+        setAppointments(prev => prev.filter(a => a._id !== id));
+        alert('Appointment deleted successfully.');
+    } catch (err) { alert(err.message); }
+  };
+
 
   const handleMarkRead = async (id) => {
     try {
@@ -346,14 +377,24 @@ const AdminDashboard = () => {
                       <td className="px-4 py-3 text-slate-500 max-w-[200px] truncate">{apt.purpose || '—'}</td>
                       <td className="px-4 py-3"><StatusBadge status={apt.status} /></td>
                       <td className="px-4 py-3">
-                        <select
-                          value={apt.status}
-                          onChange={(e) => handleAppointmentStatus(apt._id, e.target.value)}
-                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-primary"
-                        >
-                          {['pending', 'confirmed', 'cancelled', 'completed'].map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                        <div className="flex items-center gap-2">
+                           <select
+                            value={apt.status}
+                            onChange={(e) => handleAppointmentStatus(apt._id, e.target.value)}
+                            className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-primary"
+                          >
+                            {['pending', 'confirmed', 'cancelled', 'completed'].map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                          <button 
+                            onClick={() => handleDeleteAppointment(apt._id)}
+                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete Appointment"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
+
                     </tr>
                   ))}
                 </tbody>

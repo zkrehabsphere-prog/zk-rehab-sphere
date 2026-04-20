@@ -35,13 +35,31 @@ const BookingModal = ({ isOpen, onClose }) => {
     setSlotsLoading(true);
     try {
       const res = await slotsAPI.getAvailable();
-      setFreeSlots(res.data.slots || []);
+      const allSlots = res.data.slots || [];
+      
+      // Filter out slots that are in the past (especially for Today)
+      const now = new Date();
+      // Adjust to IST if needed, but client's local time is usually what users expect for "past"
+      // However, for consistency with our IST backend, let's parse properly.
+      
+      const filtered = allSlots.filter(slot => {
+        const [time, modifier] = slot.time.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        
+        const slotDate = new Date(`${slot.date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
+        return slotDate > now;
+      });
+
+      setFreeSlots(filtered);
     } catch (err) {
       setError('Failed to load available slots. Please try again.');
     } finally {
       setSlotsLoading(false);
     }
   };
+
 
   if (!isOpen) return null;
 
