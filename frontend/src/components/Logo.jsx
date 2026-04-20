@@ -1,36 +1,34 @@
 import React from 'react';
+import logoImg from '../assets/logo.png';
 
-const Logo = ({ className = "", light = false, showTagline = false, circular = false, size = "md" }) => {
-  const brandTeal = "#319795"; 
-  const brandDark = "#2C3E50";
-  const iconColor = light ? "white" : brandTeal;
-  const textColorPrimary = light ? "white" : brandDark;
-  const textColorSecondary = light ? "white" : brandTeal;
-
+const Logo = ({ className = "", size = "md" }) => {
   const isSm = size === "sm";
-
+  
   return (
-    <div className={`flex items-center gap-2 ${circular ? 'border-2 border-slate-900 rounded-full p-6 bg-white aspect-square shadow-lg' : ''} ${className}`}>
-      {/* Text Section - Branded Typography */}
-      <div className="flex flex-col">
-        <div className="flex items-center leading-none">
-          <span className={`${isSm ? 'text-4xl' : 'text-5xl'} font-black italic tracking-tighter`} style={{ color: textColorPrimary }}>Z</span>
-          <span className={`${isSm ? 'text-4xl' : 'text-5xl'} font-black tracking-tighter -ml-0.5`} style={{ color: textColorSecondary }}>K</span>
-        </div>
-        <div className="flex flex-col mt-1 leading-none">
-          <div className={`flex ${isSm ? 'text-[9px]' : 'text-[11px]'} font-black tracking-[0.2em] uppercase`}>
-            <span style={{ color: textColorPrimary }}>REHAB</span>
-            <span className="ml-1.5" style={{ color: textColorSecondary }}>SPHERE</span>
-          </div>
-          {showTagline && (
-            <div className={`text-[7px] font-bold tracking-[0.05em] uppercase mt-1 leading-[1.1] ${light ? 'text-white/90' : 'text-slate-600'}`}>
-              EMPOWERING MOVEMENT,<br/>RESTORING LIFE
-            </div>
-          )}
-        </div>
+    <div className={`flex items-center gap-3 ${className}`}>
+      <div className={`
+        ${isSm ? 'w-10 h-10' : 'w-14 h-14 md:w-16 md:h-16'} 
+        rounded-full overflow-hidden shadow-lg border-2 border-slate-100 bg-white shrink-0
+      `}>
+        <img 
+          src={logoImg} 
+          alt="ZK Rehab Sphere" 
+          className="w-full h-full object-cover scale-[1.2]" 
+        />
+      </div>
+      
+      {/* Branding Text - Optional if the logo already has text, but keeping for better accessibility/presence if needed */}
+      <div className="flex flex-col leading-none">
+        <span className={`${isSm ? 'text-lg' : 'text-xl md:text-2xl'} font-black text-slate-800 tracking-tighter`}>
+          ZK REHAB <span className="text-primary italic">SPHERE</span>
+        </span>
+        <span className={`${isSm ? 'text-[7px]' : 'text-[9px]'} font-bold text-slate-500 uppercase tracking-widest mt-0.5`}>
+          Empowering Movement
+        </span>
       </div>
     </div>
   );
 };
 
 export default Logo;
+
