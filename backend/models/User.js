@@ -42,6 +42,16 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    gender: {
+      type: String,
+      enum: ['Male', 'Female', 'Other', ''],
+      default: '',
+    },
+    age: {
+      type: Number,
+      default: null,
+    },
+
     // For doctor profiles — links to Expert document
     expertProfileId: {
       type: mongoose.Schema.Types.ObjectId,

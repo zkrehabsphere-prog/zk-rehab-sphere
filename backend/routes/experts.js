@@ -3,7 +3,8 @@ const path = require('path');
 const Expert = require('../models/Expert');
 const { protect } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
-const { uploadExpertImage, deleteFile } = require('../middleware/upload');
+const { uploadExpertImage, bufferToBase64 } = require('../middleware/upload');
+
 
 const router = express.Router();
 
@@ -72,11 +73,9 @@ router.put(
 
       let imageUrl = expert ? expert.image : '';
       if (req.file) {
-        if (expert && expert.image && expert.image.startsWith('/uploads')) {
-          deleteFile(path.join(__dirname, '..', expert.image));
-        }
-        imageUrl = `/uploads/experts/${req.file.filename}`;
+        imageUrl = bufferToBase64(req.file);
       }
+
 
       if (!expert) {
         if (!name || !role || !degree || !experience || !bio) {
@@ -108,9 +107,9 @@ router.put(
 
       res.json({ success: true, expert });
     } catch (err) {
-      if (req.file) deleteFile(req.file.path);
       next(err);
     }
+
   }
 );
 
@@ -150,9 +149,9 @@ router.post(
 
       let imageUrl = '';
       if (req.file) {
-        // Build URL path accessible via /uploads/experts/filename
-        imageUrl = `/uploads/experts/${req.file.filename}`;
+        imageUrl = bufferToBase64(req.file);
       }
+
 
       const expert = await Expert.create({
         name,
@@ -169,9 +168,9 @@ router.post(
 
       res.status(201).json({ success: true, expert });
     } catch (err) {
-      if (req.file) deleteFile(req.file.path);
       next(err);
     }
+
   }
 );
 
@@ -195,13 +194,11 @@ router.put(
       const { name, role, degree, experience, bio, order, linkedUserId, isActive, specializations, socialLinks } =
         req.body;
 
-      // If new image uploaded, delete old one
+      // If new image uploaded
       if (req.file) {
-        if (expert.image && expert.image.startsWith('/uploads')) {
-          deleteFile(path.join(__dirname, '..', expert.image));
-        }
-        expert.image = `/uploads/experts/${req.file.filename}`;
+        expert.image = bufferToBase64(req.file);
       }
+
 
       if (name) expert.name = name;
       if (role) expert.role = role;
@@ -217,9 +214,9 @@ router.put(
       await expert.save();
       res.json({ success: true, expert });
     } catch (err) {
-      if (req.file) deleteFile(req.file.path);
       next(err);
     }
+
   }
 );
 

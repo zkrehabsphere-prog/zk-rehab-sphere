@@ -2,38 +2,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure upload directories exist
-const ensureDir = (dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-};
+// ─── Shared Memory Storage (Vercel-Compatible) ────────────────────────────────
+const storage = multer.memoryStorage();
 
-// ─── Expert Images Storage ─────────────────────────────────────────────────────
-const expertStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../uploads/experts');
-    ensureDir(dir);
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const unique = `expert-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}${path.extname(file.originalname)}`);
-  },
-});
-
-// ─── Resource Files Storage ────────────────────────────────────────────────────
-const resourceStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../uploads/resources');
-    ensureDir(dir);
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const unique = `resource-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}${path.extname(file.originalname)}`);
-  },
-});
 
 // ─── File Type Filters ─────────────────────────────────────────────────────────
 const imageFilter = (req, file, cb) => {
@@ -57,16 +28,17 @@ const fileFilter = (req, file, cb) => {
 
 // ─── Multer Instances ──────────────────────────────────────────────────────────
 const uploadExpertImage = multer({
-  storage: expertStorage,
+  storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: imageFilter,
 });
 
 const uploadResource = multer({
-  storage: resourceStorage,
+  storage,
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for PDFs
   fileFilter,
 });
+
 
 // ─── Helper: delete old file ───────────────────────────────────────────────────
 const deleteFile = (filePath) => {
@@ -77,8 +49,17 @@ const deleteFile = (filePath) => {
   }
 };
 
+// ─── Base64 Helper (for MongoDB storage) ──────────────────────────────────────
+const bufferToBase64 = (file) => {
+  if (!file) return null;
+  const base64 = file.buffer.toString('base64');
+  return `data:${file.mimetype};base64,${base64}`;
+};
+
 module.exports = {
   uploadExpertImage,
   uploadResource,
   deleteFile,
+  bufferToBase64,
 };
+

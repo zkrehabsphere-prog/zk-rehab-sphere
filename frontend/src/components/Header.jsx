@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
-import { Menu, X, LayoutDashboard, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, LayoutDashboard, LogOut, ChevronDown, User } from 'lucide-react';
+
 import Button from './Button';
 import BookingModal from './BookingModal';
 import Logo from './Logo';
@@ -112,6 +113,13 @@ const Header = () => {
                       >
                         <LayoutDashboard size={16} className="text-slate-400" /> Dashboard
                       </Link>
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        <User size={16} className="text-slate-400" /> My Profile
+                      </Link>
+
                       <button
                         onClick={logout}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -172,6 +180,13 @@ const Header = () => {
                 >
                   <LayoutDashboard size={18} /> Dashboard
                 </Link>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <User size={18} /> My Profile
+                </Link>
+
                 {user.role === 'patient' && (
                   <Button onClick={() => { setIsMobileMenuOpen(false); setIsBookingOpen(true); }} className="w-full justify-center">Book Appointment</Button>
                 )}

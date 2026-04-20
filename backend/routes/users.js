@@ -5,8 +5,41 @@ const ContactMessage = require('../models/ContactMessage');
 const Newsletter = require('../models/Newsletter');
 const { protect } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
+const { uploadExpertImage, bufferToBase64 } = require('../middleware/upload');
 
 const router = express.Router();
+
+/**
+ * PATCH /api/users/profile
+ * Auth: Update own profile
+ */
+router.patch('/profile', protect, uploadExpertImage.single('photo'), async (req, res, next) => {
+  try {
+    const { name, phone, address, gender, age } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (name) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (address !== undefined) user.address = address;
+    if (gender !== undefined) user.gender = gender;
+    if (age !== undefined) user.age = Number(age);
+
+    if (req.file) {
+      user.photo = bufferToBase64(req.file);
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 /**
  * GET /api/users

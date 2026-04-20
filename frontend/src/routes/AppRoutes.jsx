@@ -11,7 +11,10 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import AdminDashboard from '../pages/dashboard/AdminDashboard';
 import DoctorDashboard from '../pages/dashboard/DoctorDashboard';
 import PatientDashboard from '../pages/dashboard/PatientDashboard';
+import Profile from '../pages/Profile';
+import DoctorProfile from '../pages/DoctorProfile';
 import { useAuth } from '../context/AuthContext';
+
 
 // Dashboard redirect by role
 const DashboardRedirect = () => {
@@ -30,10 +33,21 @@ const AppRoutes = () => {
       <Route path="/about" element={<About />} />
       <Route path="/services" element={<Services />} />
       <Route path="/experts" element={<Experts />} />
-      <Route path="/experts/:name" element={<Experts />} />
+      <Route path="/experts/:id" element={<DoctorProfile />} />
       <Route path="/resources" element={<Resources />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Protected Profile Route (All Roles) */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute roles={['admin', 'doctor', 'patient']}>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+
 
       {/* Dashboard — redirect to role-specific */}
       <Route path="/dashboard" element={<DashboardRedirect />} />
