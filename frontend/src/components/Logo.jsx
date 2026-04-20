@@ -13,8 +13,9 @@ const Logo = ({ className = "", size = "md" }) => {
         <img 
           src={logoImg} 
           alt="ZK Rehab Sphere" 
-          className="w-full h-full object-cover scale-[1.75]" 
+          className="w-full h-full object-cover scale-[1.35]" 
         />
+
       </div>
     </div>
   );
