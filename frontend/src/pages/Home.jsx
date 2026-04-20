@@ -4,6 +4,8 @@ import { Activity, Stethoscope, BookOpen, Users, ArrowRight, GraduationCap } fro
 import Button from '../components/Button';
 import Card from '../components/Card';
 import SectionTitle from '../components/SectionTitle';
+import BookingModal from '../components/BookingModal';
+
 
 import SEO from '../components/SEO';
 import heroImg from '../assets/zk-reception.png';
@@ -12,6 +14,8 @@ import expertMani from '../assets/expert-mani.jpeg';
 import expertNuman from '../assets/expert-numan.jpeg';
 
 const Home = () => {
+  const [isBookingOpen, setIsBookingOpen] = React.useState(false);
+
   return (
     <div className="w-full">
       <SEO 
@@ -43,14 +47,16 @@ const Home = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start animate-fade-in-up delay-200 mt-8">
-              <a href="https://wa.me/917340820883" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto text-base font-semibold px-6 py-3.5 bg-none bg-[#25D366] text-white shadow-lg shadow-green-500/40 hover:shadow-green-500/60 hover:-translate-y-1 hover:scale-105 active:scale-95 transition-all duration-300 border border-transparent hover:border-white/20 ring-4 ring-transparent hover:ring-green-500/20 relative overflow-hidden group">
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    Book Appointment <span className="text-xs opacity-90 hidden sm:inline">(+91 7340820883)</span>
-                  </span>
-                  <div className="absolute inset-0 h-full w-full scale-0 rounded-lg transition-all duration-300 group-hover:scale-100 group-hover:bg-white/10"></div>
-                </Button>
-              </a>
+              <Button 
+                onClick={() => setIsBookingOpen(true)}
+                className="w-full sm:w-auto text-base font-semibold px-6 py-3.5 bg-secondary text-white shadow-lg shadow-secondary/40 hover:shadow-secondary/60 hover:-translate-y-1 hover:scale-105 active:scale-95 transition-all duration-300 border border-transparent hover:border-white/20 ring-4 ring-transparent hover:ring-secondary/20 relative overflow-hidden group"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  Book Appointment
+                </span>
+                <div className="absolute inset-0 h-full w-full scale-0 rounded-lg transition-all duration-300 group-hover:scale-100 group-hover:bg-white/10"></div>
+              </Button>
+
               <a href="mailto:zkrehabsphere@gmail.com" className="w-full sm:w-auto">
                 <Button variant="secondary" className="w-full sm:w-auto text-base font-semibold px-6 py-3.5 shadow-md hover:shadow-xl hover:-translate-y-1 active:scale-95 transition-all duration-300 group">
                   Email Us
@@ -285,6 +291,11 @@ const Home = () => {
         </div>
       </section>
 
+      <BookingModal 
+        key={isBookingOpen ? 'open' : 'closed'} 
+        isOpen={isBookingOpen} 
+        onClose={() => setIsBookingOpen(false)} 
+      />
     </div>
   );
 };
