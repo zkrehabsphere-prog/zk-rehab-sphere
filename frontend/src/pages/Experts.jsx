@@ -47,7 +47,7 @@ const Experts = () => {
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
           <Loader2 size={36} className="animate-spin text-primary mx-auto mb-3" />
-          <p className="text-slate-500">Loading experts...</p>
+          <p className="text-slate-500">Loading doctors...</p>
         </div>
       </div>
     );
@@ -56,12 +56,13 @@ const Experts = () => {
   return (
     <div className="w-full">
       <SEO
-        title="Our Experts - ZK Rehab Sphere"
+        title="Our Doctors - ZK Rehab Sphere"
         description="Meet our team of experienced and compassionate physiotherapy professionals."
       />
       <div className="bg-slate-50 pt-8 pb-12 lg:pt-12 lg:pb-20">
         <div className="container mx-auto px-4">
-          <SectionTitle title="Our Experts" subtitle="Meet the team dedicated to your recovery." className="mb-12" />
+          <SectionTitle title="Our Doctors" subtitle="Meet the team dedicated to your recovery." className="mb-12" />
+
 
           {error && (
             <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 mb-8">
@@ -71,9 +72,10 @@ const Experts = () => {
 
           {!error && expertData.length === 0 && (
             <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-              <p className="text-slate-500">No experts found.</p>
+              <p className="text-slate-500">No doctors found.</p>
             </div>
           )}
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {expertData.map((expert) => (

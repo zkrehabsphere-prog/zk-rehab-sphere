@@ -58,11 +58,12 @@ const TABS = [
   { id: 'overview', label: 'Overview', icon: BarChart2 },
   { id: 'appointments', label: 'Appointments', icon: Calendar },
   { id: 'slots', label: 'Slots', icon: Clock },
-  { id: 'experts', label: 'Experts', icon: Activity },
-  { id: 'users', label: 'Users', icon: Users },
+  { id: 'experts', label: 'Doctors (Profiles)', icon: Activity },
+  { id: 'users', label: 'Patients (Accounts)', icon: Users },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'newsletter', label: 'Newsletter', icon: Mail },
 ];
+
 
 const AVAILABLE_TIMES = [
   '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM',
@@ -284,6 +285,8 @@ const AdminDashboard = () => {
   const [subscribers, setSubscribers] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [roleFilter, setRoleFilter] = useState('patient'); // Default to patients
+
 
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -306,9 +309,10 @@ const AdminDashboard = () => {
         const res = await expertsAPI.getAllAdmin();
         setExperts(res.data.experts || []);
       } else if (tab === 'users') {
-        const res = await usersAPI.getAll({ limit: 100 });
+        const res = await usersAPI.getAll({ role: roleFilter, limit: 100 });
         setUsers(res.data.users || []);
       } else if (tab === 'messages') {
+
         const res = await contactAPI.getAll({ limit: 50 });
         setMessages(res.data.messages || []);
       } else if (tab === 'newsletter') {
@@ -322,7 +326,8 @@ const AdminDashboard = () => {
     }
   };
 
-  useEffect(() => { fetchData(activeTab); }, [activeTab]);
+  useEffect(() => { fetchData(activeTab); }, [activeTab, roleFilter]);
+
 
   const handleRoleChange = async (userId, role) => {
     try {
@@ -330,6 +335,23 @@ const AdminDashboard = () => {
       setUsers(prev => prev.map(u => u._id === userId ? { ...u, role } : u));
     } catch (err) { alert(err.message); }
   };
+
+  const handleToggleActive = async (userId, currentStatus) => {
+    try {
+      const newStatus = !currentStatus;
+      await usersAPI.setActive(userId, newStatus);
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, isActive: newStatus } : u));
+    } catch (err) { alert(err.message); }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!confirm('PERMANENTLY delete this user account? This cannot be undone.')) return;
+    try {
+      await usersAPI.delete(userId);
+      setUsers(prev => prev.filter(u => u._id !== userId));
+    } catch (err) { alert(err.message); }
+  };
+
 
   const handleAppointmentStatus = async (id, status) => {
     let cancelReason = '';
@@ -379,6 +401,16 @@ const AdminDashboard = () => {
       setSubscribers(prev => prev.filter(s => s._id !== id));
     } catch (err) { alert(err.message); }
   };
+
+  const handleToggleExpertActive = async (expert) => {
+    try {
+      const formData = new FormData();
+      formData.append('isActive', !expert.isActive);
+      await expertsAPI.update(expert._id, formData);
+      setExperts(prev => prev.map(e => e._id === expert._id ? { ...e, isActive: !expert.isActive } : e));
+    } catch (err) { alert(err.message); }
+  };
+
 
   const handleDeleteSlot = async (id) => {
     if (!confirm('Delete this slot?')) return;
@@ -575,31 +607,48 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className={`flex-1 text-center py-1 rounded-lg text-xs font-semibold ${expert.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {expert.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    <button 
+                      onClick={() => handleToggleExpertActive(expert)}
+                      className={`flex-1 text-center py-1 rounded-lg text-xs font-semibold transition-colors ${expert.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    >
+                      {expert.isActive ? 'Visible (Active)' : 'Hidden (Inactive)'}
+                    </button>
                     <button onClick={() => handleDeleteExpert(expert._id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                       <Trash2 size={14} />
                     </button>
                   </div>
+
                 </div>
               ))}
             </div>
-            {experts.length === 0 && <p className="text-center text-slate-400 py-10">No experts yet. Add from the button above.</p>}
+            {experts.length === 0 && <p className="text-center text-slate-400 py-10">No doctor profiles yet. Add from the button above.</p>}
           </div>
         )}
 
-        {/* ── Users ── */}
+        {/* ── Users (Patients) ── */}
         {activeTab === 'users' && !loading && (
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h2 className="font-bold text-slate-800">All Users ({users.length})</h2>
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="font-bold text-slate-800">Account Management ({users.length})</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500 uppercase">Filter:</span>
+                <select 
+                  value={roleFilter} 
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-primary"
+                >
+                  <option value="patient">Patients Only</option>
+                  <option value="doctor">Doctors Only</option>
+                  <option value="admin">Admins Only</option>
+                  <option value="">All Users</option>
+                </select>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    {['User', 'Email', 'Role', 'Joined', 'Change Role'].map(h => (
+                    {['User', 'Email', 'Role', 'Status', 'Actions'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -614,8 +663,6 @@ const AdminDashboard = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-slate-500">{u.email}</td>
-                      <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
-                      <td className="px-4 py-3 text-slate-400">{new Date(u.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
                         <select
                           value={u.role}
@@ -625,14 +672,38 @@ const AdminDashboard = () => {
                           {['patient', 'doctor', 'admin'].map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
                       </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {u.isActive !== false ? 'Active' : 'Blocked'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleToggleActive(u._id, u.isActive !== false)}
+                            className={`p-1.5 rounded-lg transition-colors ${u.isActive !== false ? 'text-orange-500 hover:bg-orange-50' : 'text-green-500 hover:bg-green-50'}`}
+                            title={u.isActive !== false ? 'Block User' : 'Unblock User'}
+                          >
+                            <Shield size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteUser(u._id)}
+                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete User"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {users.length === 0 && <p className="text-center text-slate-400 py-10">No users yet.</p>}
+              {users.length === 0 && <p className="text-center text-slate-400 py-10">No users found with this filter.</p>}
             </div>
           </div>
         )}
+
 
         {/* ── Messages ── */}
         {activeTab === 'messages' && !loading && (
