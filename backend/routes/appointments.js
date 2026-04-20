@@ -110,7 +110,7 @@ router.post('/', protect, async (req, res, next) => {
  */
 router.get('/', protect, async (req, res, next) => {
   try {
-    const { status, date, page = 1, limit = 20 } = req.query;
+    const { status, date, page = 1, limit = 20, patient, doctor } = req.query;
     const filter = {};
 
     // Scope by role
@@ -118,8 +118,11 @@ router.get('/', protect, async (req, res, next) => {
       filter.patient = req.user._id;
     } else if (req.user.role === 'doctor') {
       filter.doctor = req.user._id;
+    } else if (req.user.role === 'admin') {
+      if (patient) filter.patient = patient;
+      if (doctor) filter.doctor = doctor;
     }
-    // admin sees all
+
 
     if (status) filter.status = status;
     if (date) filter.slotDate = date;

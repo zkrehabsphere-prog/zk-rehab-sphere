@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Calendar, MessageSquare, BookOpen, Activity,
   UserCheck, Bell, Trash2, Eye, CheckCircle, XCircle,
-  Clock, ChevronDown, Plus, Shield, Edit, BarChart2, Mail, RefreshCw, X
+  Clock, ChevronDown, Plus, Shield, Edit, BarChart2, Mail, RefreshCw, X, Phone
 } from 'lucide-react';
+
 
 import { useAuth } from '../../context/AuthContext';
 import { usersAPI, appointmentsAPI, contactAPI, expertsAPI, slotsAPI, newsletterAPI } from '../../api/axios';
@@ -275,6 +276,30 @@ const EditAppointmentModal = ({ appointment, isOpen, onClose, onUpdated }) => {
   
 // ─── User Detail Modal ──────────────────────────────────────────────────────
 const UserDetailModal = ({ user, isOpen, onClose }) => {
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchHistory();
+    } else {
+      setHistory([]);
+    }
+  }, [isOpen, user]);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const roleKey = user.role === 'doctor' ? 'doctor' : 'patient';
+      const res = await appointmentsAPI.getAll({ [roleKey]: user._id, limit: 10 });
+      setHistory(res.data.appointments || []);
+    } catch (err) {
+      console.error('History fetch error:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   if (!isOpen || !user) return null;
   const expert = user.profile;
   const isDoctor = user.role === 'doctor';
@@ -351,8 +376,41 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
           </div>
         </div>
 
+        {/* Appointment History Section */}
+        <div className="mt-8 pt-8 border-t border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Calendar size={18} className="text-primary" /> Recent Appointments History
+          </h3>
+          
+          {loadingHistory ? (
+             <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+          ) : history.length > 0 ? (
+            <div className="space-y-3">
+              {history.map((apt) => (
+                <div key={apt._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition-colors">
+                  <div className="flex gap-4">
+                    <div className="text-center bg-white px-3 py-2 rounded-xl border border-slate-200 min-w-[70px]">
+                      <p className="text-[10px] font-bold text-primary uppercase">{apt.slotDate.split('-')[1]}</p>
+                      <p className="text-lg font-black text-slate-800">{apt.slotDate.split('-')[0]}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-800 text-sm">{isDoctor ? apt.patientName : `Dr. ${apt.doctor?.name || 'Unknown'}`}</p>
+                      <p className="text-slate-500 text-xs">{apt.slotTime}</p>
+                    </div>
+                  </div>
+                  <StatusBadge status={apt.status} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <p className="text-slate-400 text-sm">No appointment records found for this user.</p>
+            </div>
+          )}
+        </div>
+
         {isDoctor && expert && (
-          <div className="space-y-6 pt-6 border-t border-slate-100">
+          <div className="space-y-6 pt-8 mt-8 border-t border-slate-100">
             <div>
               <h3 className="text-lg font-bold text-slate-800 mb-2">Professional Bio</h3>
               <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{expert.bio}</p>
@@ -390,6 +448,7 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
     </div>
   );
 };
+
 
 
 
