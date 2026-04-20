@@ -13,7 +13,7 @@ const Logo = ({ className = "", size = "md" }) => {
         <img 
           src={logoImg} 
           alt="ZK Rehab Sphere" 
-          className="w-full h-full object-cover scale-[1.1]" 
+          className="w-full h-full object-cover scale-[1.75]" 
         />
       </div>
     </div>
@@ -21,5 +21,6 @@ const Logo = ({ className = "", size = "md" }) => {
 };
 
 export default Logo;
+
 
 
