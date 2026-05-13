@@ -8,6 +8,37 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <title>ZK Rehab Sphere</title>
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        var div = document.createElement('div');
+        div.style.padding = '20px';
+        div.style.background = 'red';
+        div.style.color = 'white';
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.width = '100%';
+        div.style.zIndex = '999999';
+        div.style.fontSize = '14px';
+        div.innerHTML = '<b>Runtime Error:</b> ' + msg + '<br>@ ' + url + ':' + line + ':' + col;
+        document.body.appendChild(div);
+        return false;
+      };
+      window.onunhandledrejection = function(event) {
+        var div = document.createElement('div');
+        div.style.padding = '20px';
+        div.style.background = 'orange';
+        div.style.color = 'black';
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.width = '100%';
+        div.style.zIndex = '999999';
+        div.style.fontSize = '14px';
+        div.innerHTML = '<b>Unhandled Promise Rejection:</b> ' + event.reason;
+        document.body.appendChild(div);
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>
