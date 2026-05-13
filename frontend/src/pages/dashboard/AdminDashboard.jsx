@@ -60,6 +60,7 @@ const TABS = [
   { id: 'appointments', label: 'Appointments', icon: Calendar },
   { id: 'slots', label: 'Slots', icon: Clock },
   { id: 'experts', label: 'Doctors', icon: Activity },
+  { id: 'users', label: 'Patients', icon: Users },
   { id: 'blogs', label: 'Blogs', icon: FileText },
   { id: 'resources', label: 'Resources', icon: Folder },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
@@ -511,11 +512,13 @@ const AdminDashboard = () => {
       } else if (tab === 'users') {
         const res = await usersAPI.getAll({ role: roleFilter, limit: 100 });
         setUsers(res.data.users || []);
-      } else if (activeTab === 'blogs') {
+      } else if (tab === 'blogs') {
         const res = await blogsAPI.getAllAdmin();
         setBlogs(res.data.blogs || []);
-      } else if (activeTab === 'resources') {
-
+      } else if (tab === 'resources') {
+        const res = await resourcesAPI.getAllAdmin({ limit: 100 });
+        setResources(res.data.resources || []);
+      } else if (tab === 'messages') {
         const res = await contactAPI.getAll({ limit: 50 });
         setMessages(res.data.messages || []);
       } else if (tab === 'newsletter') {
@@ -614,8 +617,9 @@ const AdminDashboard = () => {
 
   const handleToggleResourceStatus = async (resource) => {
     try {
-      await newsletterAPI.delete(id);
-      setSubscribers(prev => prev.filter(s => s._id !== id));
+      const newStatus = resource.status === 'published' ? 'draft' : 'published';
+      await resourcesAPI.update(resource._id, { status: newStatus });
+      setResources(prev => prev.map(r => r._id === resource._id ? { ...r, status: newStatus } : r));
     } catch (err) { alert(err.message); }
   };
 
