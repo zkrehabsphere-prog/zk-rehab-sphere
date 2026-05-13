@@ -4,7 +4,7 @@
   "description": "Backend API for ZK Rehab Sphere physiotherapy platform",
   "main": "handler.js",
   "engines": {
-    "node": "22"
+    "node": ">=20"
   },
   "type": "commonjs",
   "scripts": {
