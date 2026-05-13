@@ -13,6 +13,7 @@ import DoctorDashboard from '../pages/dashboard/DoctorDashboard';
 import PatientDashboard from '../pages/dashboard/PatientDashboard';
 import Profile from '../pages/Profile';
 import DoctorProfile from '../pages/DoctorProfile';
+import ExpertFormPage from '../pages/dashboard/ExpertFormPage';
 import { useAuth } from '../context/AuthContext';
 
 
@@ -62,10 +63,42 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/dashboard/admin/experts/new"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <ExpertFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/admin/experts/:id/edit"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <ExpertFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/dashboard/doctor"
         element={
           <ProtectedRoute roles={['doctor']}>
             <DoctorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/doctor/experts/new"
+        element={
+          <ProtectedRoute roles={['doctor']}>
+            <ExpertFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/doctor/experts/:id/edit"
+        element={
+          <ProtectedRoute roles={['doctor']}>
+            <ExpertFormPage />
           </ProtectedRoute>
         }
       />

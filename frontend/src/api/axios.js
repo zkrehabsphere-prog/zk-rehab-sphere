@@ -91,13 +91,12 @@ export const slotsAPI = {
 /** Experts */
 export const expertsAPI = {
   getMe: () => api.get('/experts/me'),
-  updateMe: (formData) => api.put('/experts/me', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  updateMe: (data) => api.put('/experts/me', data),
   getAll: () => api.get('/experts'),
   getAllAdmin: () => api.get('/experts/all'),
   getById: (id) => api.get(`/experts/${id}`),
-  create: (formData) => api.post('/experts', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  update: (id, formData) =>
-    api.put(`/experts/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  create: (data) => api.post('/experts', data),
+  update: (id, data) => api.put(`/experts/${id}`, data),
   delete: (id) => api.delete(`/experts/${id}`),
 };
 

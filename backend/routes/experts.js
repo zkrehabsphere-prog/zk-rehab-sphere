@@ -3,7 +3,7 @@ const path = require('path');
 const Expert = require('../models/Expert');
 const { protect } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
-const { uploadExpertImage, bufferToBase64 } = require('../middleware/upload');
+const { uploadExpertImage, bufferToBase64, deleteFile } = require('../middleware/upload');
 
 
 const router = express.Router();
@@ -30,7 +30,7 @@ router.get('/', async (req, res, next) => {
  * GET /api/experts/all
  * Admin: Get all experts including inactive
  */
-router.get('/all', protect, requireRole('admin'), async (req, res, next) => {
+router.get('/all', protect, requireRole('admin', 'doctor'), async (req, res, next) => {
   try {
     const experts = await Expert.find()
       .sort({ order: 1, createdAt: 1 })
@@ -72,8 +72,16 @@ router.put(
       let expert = await Expert.findOne({ linkedUserId: req.user._id });
 
       let imageUrl = expert ? expert.image : '';
-      if (req.file) {
-        imageUrl = bufferToBase64(req.file);
+      if (req.body.image && req.body.image.startsWith('data:image')) {
+        if (expert && expert.image && expert.image.startsWith('/uploads')) {
+          try { deleteFile(path.join(__dirname, '..', expert.image)); } catch (e) {}
+        }
+        imageUrl = req.body.image;
+      } else if (req.file) {
+        if (expert && expert.image && expert.image.startsWith('/uploads')) {
+          try { deleteFile(path.join(__dirname, '..', expert.image)); } catch (e) {}
+        }
+        imageUrl = typeof bufferToBase64 === 'function' ? bufferToBase64(req.file) : `/uploads/experts/${req.file.filename}`;
       }
 
 
@@ -86,8 +94,8 @@ router.put(
           linkedUserId: req.user._id,
           name, role, degree, experience, bio,
           image: imageUrl,
-          specializations: specializations ? JSON.parse(specializations) : [],
-          socialLinks: socialLinks ? JSON.parse(socialLinks) : {},
+          specializations: specializations ? (typeof specializations === 'string' ? JSON.parse(specializations) : specializations) : [],
+          socialLinks: socialLinks ? (typeof socialLinks === 'string' ? JSON.parse(socialLinks) : socialLinks) : {},
         });
         
         // Update user reference
@@ -100,8 +108,8 @@ router.put(
         if (experience) expert.experience = experience;
         if (bio) expert.bio = bio;
         expert.image = imageUrl;
-        if (specializations) expert.specializations = JSON.parse(specializations);
-        if (socialLinks) expert.socialLinks = JSON.parse(socialLinks);
+        if (specializations) expert.specializations = typeof specializations === 'string' ? JSON.parse(specializations) : specializations;
+        if (socialLinks) expert.socialLinks = typeof socialLinks === 'string' ? JSON.parse(socialLinks) : socialLinks;
         await expert.save();
       }
 
@@ -135,7 +143,7 @@ router.get('/:id', async (req, res, next) => {
 router.post(
   '/',
   protect,
-  requireRole('admin'),
+  requireRole('admin', 'doctor'),
   uploadExpertImage.single('image'),
   async (req, res, next) => {
     try {
@@ -148,8 +156,12 @@ router.post(
       }
 
       let imageUrl = '';
-      if (req.file) {
-        imageUrl = bufferToBase64(req.file);
+      if (req.body.image && req.body.image.startsWith('data:image')) {
+        // Use Base64 image from body (saved in MongoDB)
+        imageUrl = req.body.image;
+      } else if (req.file) {
+        // Use bufferToBase64 if available, else fallback
+        imageUrl = typeof bufferToBase64 === 'function' ? bufferToBase64(req.file) : `/uploads/experts/${req.file.filename}`;
       }
 
 
@@ -162,8 +174,8 @@ router.post(
         image: imageUrl,
         order: order ? Number(order) : 0,
         linkedUserId: linkedUserId || null,
-        specializations: specializations ? JSON.parse(specializations) : [],
-        socialLinks: socialLinks ? JSON.parse(socialLinks) : {},
+        specializations: specializations ? (typeof specializations === 'string' ? JSON.parse(specializations) : specializations) : [],
+        socialLinks: socialLinks ? (typeof socialLinks === 'string' ? JSON.parse(socialLinks) : socialLinks) : {},
       });
 
       res.status(201).json({ success: true, expert });
@@ -181,7 +193,7 @@ router.post(
 router.put(
   '/:id',
   protect,
-  requireRole('admin'),
+  requireRole('admin', 'doctor'),
   uploadExpertImage.single('image'),
   async (req, res, next) => {
     try {
@@ -194,9 +206,20 @@ router.put(
       const { name, role, degree, experience, bio, order, linkedUserId, isActive, specializations, socialLinks } =
         req.body;
 
-      // If new image uploaded
-      if (req.file) {
-        expert.image = bufferToBase64(req.file);
+      // Priority 1: Base64 image in body
+      if (req.body.image && req.body.image.startsWith('data:image')) {
+        // If there was an old file-based image, we could delete it, but Base64 is stored in DB
+        if (expert.image && expert.image.startsWith('/uploads')) {
+          try { deleteFile(path.join(__dirname, '..', expert.image)); } catch (e) {}
+        }
+        expert.image = req.body.image;
+      } 
+      // Priority 2: New file upload
+      else if (req.file) {
+        if (expert.image && expert.image.startsWith('/uploads')) {
+          try { deleteFile(path.join(__dirname, '..', expert.image)); } catch (e) {}
+        }
+        expert.image = typeof bufferToBase64 === 'function' ? bufferToBase64(req.file) : `/uploads/experts/${req.file.filename}`;
       }
 
 
@@ -208,8 +231,8 @@ router.put(
       if (order !== undefined) expert.order = Number(order);
       if (linkedUserId !== undefined) expert.linkedUserId = linkedUserId || null;
       if (isActive !== undefined) expert.isActive = isActive === 'true' || isActive === true;
-      if (specializations) expert.specializations = JSON.parse(specializations);
-      if (socialLinks) expert.socialLinks = JSON.parse(socialLinks);
+      if (specializations) expert.specializations = typeof specializations === 'string' ? JSON.parse(specializations) : specializations;
+      if (socialLinks) expert.socialLinks = typeof socialLinks === 'string' ? JSON.parse(socialLinks) : socialLinks;
 
       await expert.save();
       res.json({ success: true, expert });
@@ -224,7 +247,7 @@ router.put(
  * DELETE /api/experts/:id
  * Admin: Remove expert
  */
-router.delete('/:id', protect, requireRole('admin'), async (req, res, next) => {
+router.delete('/:id', protect, requireRole('admin', 'doctor'), async (req, res, next) => {
   try {
     const expert = await Expert.findById(req.params.id);
     if (!expert) return res.status(404).json({ error: 'Expert not found.' });

@@ -2,7 +2,7 @@ import React from 'react';
 import { X, Award, Clock, GraduationCap, Quote } from 'lucide-react';
 import Button from './Button';
 
-const ExpertBioModal = ({ isOpen, onClose, expert }) => {
+const ExpertBioModal = ({ isOpen, onClose, expert, getImageUrl }) => {
   if (!isOpen || !expert) return null;
 
   return (
@@ -29,7 +29,7 @@ const ExpertBioModal = ({ isOpen, onClose, expert }) => {
           {/* Left: Image Side */}
           <div className="md:w-2/5 relative h-64 md:h-auto overflow-hidden bg-slate-100">
              <img 
-               src={expert.image} 
+               src={getImageUrl ? getImageUrl(expert.image) : expert.image} 
                alt={expert.name} 
                className="w-full h-full object-cover object-top"
              />
