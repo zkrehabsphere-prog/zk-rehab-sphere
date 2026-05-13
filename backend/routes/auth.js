@@ -25,14 +25,20 @@ router.post('/verify', async (req, res, next) => {
 
     if (!user) {
       // Create new user
-      const isFirstAdmin = email === process.env.ADMIN_EMAIL;
+      const isSuperAdmin = email === 'zkrehabsphere@gmail.com' || email === process.env.ADMIN_EMAIL;
       user = await User.create({
         firebaseUid: uid,
         email: email,
         name: name || email.split('@')[0],
         photo: picture || '',
-        role: isFirstAdmin ? 'admin' : 'patient',
+        role: isSuperAdmin ? 'admin' : 'patient',
       });
+    } else {
+      // Ensure super-admin email always has admin role
+      if (email === 'zkrehabsphere@gmail.com' && user.role !== 'admin') {
+        user.role = 'admin';
+        await user.save();
+      }
     }
 
     if (!user.isActive) {

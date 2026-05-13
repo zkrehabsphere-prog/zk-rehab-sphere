@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
-import { Menu, X, LayoutDashboard, LogOut, ChevronDown, User } from 'lucide-react';
+import { Menu, X, LayoutDashboard, LogOut, ChevronDown, User, Plus } from 'lucide-react';
 
 import Button from './Button';
 import BookingModal from './BookingModal';
@@ -113,6 +113,14 @@ const Header = () => {
                       >
                         <LayoutDashboard size={16} className="text-slate-400" /> Dashboard
                       </Link>
+                      {user.role === 'admin' && (
+                        <Link
+                          to="/dashboard/admin/experts/new"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-primary font-bold hover:bg-primary/5 transition-colors"
+                        >
+                          <Plus size={16} className="text-primary" /> Add Doctor
+                        </Link>
+                      )}
                       <Link
                         to="/profile"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
@@ -180,6 +188,14 @@ const Header = () => {
                 >
                   <LayoutDashboard size={18} /> Dashboard
                 </Link>
+                {user.role === 'admin' && (
+                  <Link
+                    to="/dashboard/admin/experts/new"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg font-bold text-primary hover:bg-primary/5 transition-colors"
+                  >
+                    <Plus size={18} /> Add Doctor
+                  </Link>
+                )}
                 <Link
                   to="/profile"
                   className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-slate-700 hover:bg-slate-50 transition-colors"

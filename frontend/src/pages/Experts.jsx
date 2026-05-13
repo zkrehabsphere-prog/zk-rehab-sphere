@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Clock, Loader2 } from 'lucide-react';
+import { Award, Clock, Loader2, Plus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import Card from '../components/Card';
 import SectionTitle from '../components/SectionTitle';
 import Button from '../components/Button';
@@ -24,6 +25,8 @@ const Experts = () => {
   const [expertData, setExpertData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.email === 'zkrehabsphere@gmail.com';
 
   useEffect(() => {
     const fetchExperts = async () => {
@@ -63,7 +66,17 @@ const Experts = () => {
       />
       <div className="bg-slate-50 pt-8 pb-12 lg:pt-12 lg:pb-20">
         <div className="container mx-auto px-4">
-          <SectionTitle title="Our Doctors" subtitle="Meet the team dedicated to your recovery." className="mb-12" />
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
+            <SectionTitle title="Our Doctors" subtitle="Meet the team dedicated to your recovery." className="mb-0" />
+            {isAdmin && (
+              <a 
+                href="/dashboard/admin/experts/new" 
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark transition-all shadow-lg shadow-primary/20"
+              >
+                <Plus size={20} /> Add New Doctor
+              </a>
+            )}
+          </div>
 
 
           {error && (
