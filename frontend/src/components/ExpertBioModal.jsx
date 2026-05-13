@@ -43,9 +43,11 @@ const ExpertBioModal = ({ isOpen, onClose, expert, getImageUrl }) => {
                     {expert.role}
                 </span>
                 <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-1">{expert.name}</h2>
-                <div className="flex items-center gap-3 text-slate-500 text-sm">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-500 text-sm">
                     <div className="flex items-center gap-1.5"><Award size={14} className="text-primary"/> {expert.degree}</div>
                     <div className="flex items-center gap-1.5"><Clock size={14} className="text-primary"/> {expert.experience}</div>
+                    {expert.email && <div className="flex items-center gap-1.5 text-xs text-slate-400"><span className="font-bold text-primary">@</span> {expert.email}</div>}
+                    {expert.phone && <div className="flex items-center gap-1.5 text-xs text-slate-400"><span className="font-bold text-primary">#</span> {expert.phone}</div>}
                 </div>
             </div>
 

@@ -143,11 +143,11 @@ router.get('/:id', async (req, res, next) => {
 router.post(
   '/',
   protect,
-  requireRole('admin', 'doctor'),
+  requireRole('admin'),
   uploadExpertImage.single('image'),
   async (req, res, next) => {
     try {
-      const { name, role, degree, experience, bio, order, linkedUserId, specializations, socialLinks } = req.body;
+      const { name, role, degree, experience, bio, email, phone, order, linkedUserId, specializations, socialLinks } = req.body;
 
       if (!name || !role || !degree || !experience || !bio) {
         // Clean up uploaded file if validation fails
@@ -171,6 +171,8 @@ router.post(
         degree,
         experience,
         bio,
+        email,
+        phone,
         image: imageUrl,
         order: order ? Number(order) : 0,
         linkedUserId: linkedUserId || null,
@@ -193,7 +195,7 @@ router.post(
 router.put(
   '/:id',
   protect,
-  requireRole('admin', 'doctor'),
+  requireRole('admin'),
   uploadExpertImage.single('image'),
   async (req, res, next) => {
     try {
@@ -203,7 +205,7 @@ router.put(
         return res.status(404).json({ error: 'Expert not found.' });
       }
 
-      const { name, role, degree, experience, bio, order, linkedUserId, isActive, specializations, socialLinks } =
+      const { name, role, degree, experience, bio, email, phone, order, linkedUserId, isActive, specializations, socialLinks } =
         req.body;
 
       // Priority 1: Base64 image in body
@@ -228,6 +230,8 @@ router.put(
       if (degree) expert.degree = degree;
       if (experience) expert.experience = experience;
       if (bio) expert.bio = bio;
+      if (email !== undefined) expert.email = email;
+      if (phone !== undefined) expert.phone = phone;
       if (order !== undefined) expert.order = Number(order);
       if (linkedUserId !== undefined) expert.linkedUserId = linkedUserId || null;
       if (isActive !== undefined) expert.isActive = isActive === 'true' || isActive === true;
@@ -247,7 +251,7 @@ router.put(
  * DELETE /api/experts/:id
  * Admin: Remove expert
  */
-router.delete('/:id', protect, requireRole('admin', 'doctor'), async (req, res, next) => {
+router.delete('/:id', protect, requireRole('admin'), async (req, res, next) => {
   try {
     const expert = await Expert.findById(req.params.id);
     if (!expert) return res.status(404).json({ error: 'Expert not found.' });

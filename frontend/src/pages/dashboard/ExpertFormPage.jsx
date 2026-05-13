@@ -15,6 +15,8 @@ const ExpertFormPage = () => {
     degree: '',
     experience: '',
     bio: '',
+    email: '',
+    phone: '',
     order: 0,
     linkedUserId: '',
     isActive: true,
@@ -54,6 +56,8 @@ const ExpertFormPage = () => {
           degree: expert.degree,
           experience: expert.experience,
           bio: expert.bio,
+          email: expert.email || '',
+          phone: expert.phone || '',
           order: expert.order || 0,
           linkedUserId: expert.linkedUserId?._id || expert.linkedUserId || '',
           isActive: expert.isActive,
@@ -220,6 +224,28 @@ const ExpertFormPage = () => {
                   onChange={e => setForm({...form, experience: e.target.value})}
                   className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="e.g. 10+ Years Experience"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  value={form.email}
+                  onChange={e => setForm({...form, email: e.target.value})}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="doctor@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Contact Number</label>
+                <input 
+                  type="text" 
+                  value={form.phone}
+                  onChange={e => setForm({...form, phone: e.target.value})}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="+91 XXXXX XXXXX"
                 />
               </div>
 

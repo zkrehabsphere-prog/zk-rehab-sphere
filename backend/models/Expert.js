@@ -27,6 +27,16 @@ const expertSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    email: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     // Image: path relative to /uploads or an external URL
     image: {
       type: String,

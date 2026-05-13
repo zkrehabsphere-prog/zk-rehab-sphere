@@ -12,13 +12,16 @@ const requireRole = (...roles) => {
       return res.status(401).json({ error: 'Not authenticated.' });
     }
 
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        error: `Access denied. Required role: ${roles.join(' or ')}. Your role: ${req.user.role}`,
-      });
+    // Super-admin email check
+    const isAdminEmail = req.user.email === 'zkrehabsphere@gmail.com';
+    
+    if (isAdminEmail || roles.includes(req.user.role)) {
+      return next();
     }
 
-    next();
+    return res.status(403).json({
+      error: `Access denied. Required role: ${roles.join(' or ')}. Your role: ${req.user.role}`,
+    });
   };
 };
 

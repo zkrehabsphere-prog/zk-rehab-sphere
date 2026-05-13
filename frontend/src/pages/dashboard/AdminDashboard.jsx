@@ -811,7 +811,7 @@ const AdminDashboard = () => {
                           <h3 className="font-bold text-slate-800 text-sm">{doc.name}</h3>
                           <RoleBadge role={doc.role} />
                         </div>
-                        <p className="text-slate-500 text-[10px] truncate mb-1">{doc.email} {doc.phone && `| ${doc.phone}`}</p>
+                        <p className="text-slate-500 text-[10px] truncate mb-1">{expert?.email || doc.email} {(expert?.phone || doc.phone) && `| ${expert?.phone || doc.phone}`}</p>
                         <p className="text-primary font-bold text-[10px] uppercase tracking-wider">
                           {expert ? `${expert.role} · ${expert.degree}` : 'No Profile Set Up'}
                         </p>

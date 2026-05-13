@@ -27,7 +27,6 @@ const TABS = [
   { id: 'appointments', label: 'Appointments', icon: Calendar },
   { id: 'slots', label: 'My Slots', icon: Clock },
   { id: 'profile', label: 'My Profile', icon: User },
-  { id: 'experts', label: 'Manage Experts', icon: Activity },
 ];
 
 const AVAILABLE_TIMES = [
@@ -146,7 +145,6 @@ const DoctorDashboard = () => {
   const [filter, setFilter] = useState('all');
   
   const [slots, setSlots] = useState([]);
-  const [experts, setExperts] = useState([]);
   const [expertProfile, setExpertProfile] = useState(null);
   
   const [loading, setLoading] = useState(true);
@@ -190,9 +188,6 @@ const DoctorDashboard = () => {
             setProfileForm(prev => ({ ...prev, name: user.name }));
           }
         }
-      } else if (activeTab === 'experts') {
-        const res = await expertsAPI.getAllAdmin();
-        setExperts(res.data.experts || []);
       }
     } catch (err) {
       console.error(err);
@@ -221,14 +216,6 @@ const DoctorDashboard = () => {
     try {
       await slotsAPI.delete(id);
       setSlots(prev => prev.filter(s => s._id !== id));
-    } catch (err) { alert(err.message); }
-  };
-
-  const handleDeleteExpert = async (id) => {
-    if (!confirm('Delete this expert profile?')) return;
-    try {
-      await expertsAPI.delete(id);
-      setExperts(prev => prev.filter(e => e._id !== id));
     } catch (err) { alert(err.message); }
   };
 
@@ -586,47 +573,6 @@ const DoctorDashboard = () => {
             </div>
           </div>
         )}
-
-        {/* ── MANAGE EXPERTS TAB ── */}
-        {activeTab === 'experts' && (
-          <div>
-            <div className="mb-4 flex justify-end">
-              <a href="/dashboard/doctor/experts/new" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors flex items-center gap-2">
-                <Plus size={16} /> Add Doctor
-              </a>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {experts.map((expert) => (
-                <div key={expert._id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-3">
-                    <img
-                      src={expert.image?.startsWith('data:') ? expert.image : (expert.image?.startsWith('/uploads') ? `${API_BASE}${expert.image}` : expert.image || '/placeholder.jpg')}
-                      alt={expert.name}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
-                    />
-                    <div>
-                      <h3 className="font-bold text-slate-800 text-sm">{expert.name}</h3>
-                      <p className="text-slate-500 text-xs">{expert.role}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className={`flex-1 text-center py-1 rounded-lg text-xs font-semibold ${expert.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {expert.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                    <a href={`/dashboard/doctor/experts/${expert._id}/edit`} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                      <Edit size={14} />
-                    </a>
-                    <button onClick={() => handleDeleteExpert(expert._id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {experts.length === 0 && <p className="text-center text-slate-400 py-10">No doctors added yet. Use the button above to add one.</p>}
-          </div>
-        )}
-
       </div>
     </div>
   );

@@ -87,22 +87,6 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/dashboard/doctor/experts/new"
-        element={
-          <ProtectedRoute roles={['doctor']}>
-            <ExpertFormPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/doctor/experts/:id/edit"
-        element={
-          <ProtectedRoute roles={['doctor']}>
-            <ExpertFormPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/dashboard/patient"
         element={
           <ProtectedRoute roles={['patient']}>
