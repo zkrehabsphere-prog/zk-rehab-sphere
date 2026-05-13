@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Calendar, MessageSquare, BookOpen, Activity,
   UserCheck, Bell, Trash2, Eye, CheckCircle, XCircle,
-  Clock, ChevronDown, Plus, Shield, Edit, BarChart2, Mail, RefreshCw, X, Phone
+  Clock, ChevronDown, Plus, Shield, Edit, BarChart2, Mail, RefreshCw, X, Phone, FileText, Folder
 } from 'lucide-react';
 
 
 import { useAuth } from '../../context/AuthContext';
-import { usersAPI, appointmentsAPI, contactAPI, expertsAPI, slotsAPI, newsletterAPI } from '../../api/axios';
+import { usersAPI, appointmentsAPI, contactAPI, expertsAPI, slotsAPI, newsletterAPI, blogsAPI, resourcesAPI } from '../../api/axios';
 import SEO from '../../components/SEO';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
