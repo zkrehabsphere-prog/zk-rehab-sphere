@@ -137,3 +137,13 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`),
   getDashboardStats: () => api.get('/users/dashboard-stats'),
 };
+
+/** Blogs */
+export const blogsAPI = {
+  getPublished: () => api.get('/blogs'),
+  getAllAdmin: () => api.get('/blogs/all'),
+  getBySlug: (slug) => api.get(`/blogs/${slug}`),
+  create: (data) => api.post('/blogs', data),
+  update: (id, data) => api.put(`/blogs/${id}`, data),
+  delete: (id) => api.delete(`/blogs/${id}`),
+};

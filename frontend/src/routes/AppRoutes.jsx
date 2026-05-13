@@ -14,6 +14,9 @@ import PatientDashboard from '../pages/dashboard/PatientDashboard';
 import Profile from '../pages/Profile';
 import DoctorProfile from '../pages/DoctorProfile';
 import ExpertFormPage from '../pages/dashboard/ExpertFormPage';
+import Blog from '../pages/Blog';
+import BlogPostPage from '../pages/BlogPostPage';
+import BlogFormPage from '../pages/dashboard/BlogFormPage';
 import { useAuth } from '../context/AuthContext';
 
 
@@ -35,6 +38,8 @@ const AppRoutes = () => {
       <Route path="/services" element={<Services />} />
       <Route path="/experts" element={<Experts />} />
       <Route path="/experts/:id" element={<DoctorProfile />} />
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/resources" element={<Resources />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<LoginPage />} />
@@ -75,6 +80,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute roles={['admin']}>
             <ExpertFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/admin/blogs/new"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <BlogFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/admin/blogs/:id/edit"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <BlogFormPage />
           </ProtectedRoute>
         }
       />

@@ -59,8 +59,9 @@ const TABS = [
   { id: 'overview', label: 'Overview', icon: BarChart2 },
   { id: 'appointments', label: 'Appointments', icon: Calendar },
   { id: 'slots', label: 'Slots', icon: Clock },
-  { id: 'experts', label: 'Doctors (Profiles)', icon: Activity },
-  { id: 'users', label: 'Patients (Accounts)', icon: Users },
+  { id: 'experts', label: 'Doctors', icon: Activity },
+  { id: 'blogs', label: 'Blogs', icon: FileText },
+  { id: 'resources', label: 'Resources', icon: Folder },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'newsletter', label: 'Newsletter', icon: Mail },
 ];
@@ -459,6 +460,8 @@ const AdminDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [slots, setSlots] = useState([]);
   const [experts, setExperts] = useState([]);
+  const [blogs, setBlogs] = useState([]);
+  const [resources, setResources] = useState([]);
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [subscribers, setSubscribers] = useState([]);
@@ -508,7 +511,10 @@ const AdminDashboard = () => {
       } else if (tab === 'users') {
         const res = await usersAPI.getAll({ role: roleFilter, limit: 100 });
         setUsers(res.data.users || []);
-      } else if (tab === 'messages') {
+      } else if (activeTab === 'blogs') {
+        const res = await blogsAPI.getAllAdmin();
+        setBlogs(res.data.blogs || []);
+      } else if (activeTab === 'resources') {
 
         const res = await contactAPI.getAll({ limit: 50 });
         setMessages(res.data.messages || []);
@@ -595,6 +601,21 @@ const AdminDashboard = () => {
     try {
       await expertsAPI.delete(id);
       setExperts(prev => prev.filter(e => e._id !== id));
+    } catch (err) { alert(err.message); }
+  };
+
+  const handleDeleteBlog = async (id) => {
+    if (!confirm('Delete this blog post?')) return;
+    try {
+      await blogsAPI.delete(id);
+      setBlogs(prev => prev.filter(b => b._id !== id));
+    } catch (err) { alert(err.message); }
+  };
+
+  const handleToggleResourceStatus = async (resource) => {
+    try {
+      await newsletterAPI.delete(id);
+      setSubscribers(prev => prev.filter(s => s._id !== id));
     } catch (err) { alert(err.message); }
   };
 
@@ -871,6 +892,53 @@ const AdminDashboard = () => {
             </div>
             {experts.length === 0 && <p className="text-center text-slate-400 py-10">No doctor accounts found. Create a user with the 'doctor' role first.</p>}
 
+          </div>
+        )}
+
+        {/* ── Blogs ── */}
+        {activeTab === 'blogs' && !loading && (
+          <div>
+            <div className="mb-4 flex justify-end">
+              <a href="/dashboard/admin/blogs/new" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors flex items-center gap-2">
+                <Plus size={16} /> Write Blog Post
+              </a>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {blogs.map((blog) => (
+                <div key={blog._id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="aspect-video bg-slate-100">
+                    {blog.coverImage && <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover" />}
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        blog.status === 'published' ? 'bg-green-100 text-green-700' : 
+                        blog.status === 'scheduled' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {blog.status}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {new Date(blog.publishedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-sm line-clamp-2 mb-4 h-10">{blog.title}</h3>
+                    <div className="flex items-center gap-2 pt-4 border-t border-slate-50">
+                      <a href={`/blog/${blog.slug}`} target="_blank" rel="noreferrer" className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors">
+                        <Eye size={14} />
+                      </a>
+                      <div className="flex-1" />
+                      <a href={`/dashboard/admin/blogs/${blog._id}/edit`} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <Edit size={14} />
+                      </a>
+                      <button onClick={() => handleDeleteBlog(blog._id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {blogs.length === 0 && <p className="text-center text-slate-400 py-10">No blog posts yet. Start writing your first article!</p>}
           </div>
         )}
 

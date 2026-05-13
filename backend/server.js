@@ -18,6 +18,7 @@ const expertRoutes = require('./routes/experts');
 const resourceRoutes = require('./routes/resources');
 const newsletterRoutes = require('./routes/newsletter');
 const userRoutes = require('./routes/users');
+const blogRoutes = require('./routes/blogs');
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.use('/api/experts', expertRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/blogs', blogRoutes);
 
 // ─── Health Check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
