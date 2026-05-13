@@ -130,11 +130,13 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n🚀 ZK Rehab Sphere API running on http://localhost:${PORT}`);
-  console.log(`📦 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Frontend: ${process.env.FRONTEND_URL}\n`);
-});
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`\n🚀 ZK Rehab Sphere API running on http://localhost:${PORT}`);
+    console.log(`📦 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🔗 Frontend: ${process.env.FRONTEND_URL}\n`);
+  });
+}
 
 module.exports = app;
