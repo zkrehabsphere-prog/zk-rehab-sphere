@@ -88,12 +88,12 @@ const emailBase = (content) => `
 /**
  * Send appointment confirmation to patient
  */
-const sendAppointmentConfirmation = async ({ to, patientName, doctorName, date, time, purpose }) => {
+const sendAppointmentConfirmation = async ({ to, patientName, expertName, date, time, purpose }) => {
   const html = emailBase(`
     <h2 style="color:#0f766e; margin-top:0;">Appointment Confirmed ✅</h2>
     <p>Dear <strong>${patientName}</strong>, your appointment has been <strong>confirmed</strong>.</p>
     <div style="background:#f0fdf4; border-left: 4px solid #0f766e; padding: 16px; border-radius: 8px; margin: 20px 0;">
-      <div class="info-row"><span class="info-label">👨‍⚕️ Doctor:</span><span class="info-value">${doctorName}</span></div>
+      <div class="info-row"><span class="info-label">👨‍⚕️ Expert:</span><span class="info-value">${expertName}</span></div>
       <div class="info-row"><span class="info-label">📅 Date:</span><span class="info-value">${date}</span></div>
       <div class="info-row"><span class="info-label">🕐 Time:</span><span class="info-value">${time}</span></div>
       ${purpose ? `<div class="info-row"><span class="info-label">📋 Purpose:</span><span class="info-value">${purpose}</span></div>` : ''}
@@ -107,9 +107,9 @@ const sendAppointmentConfirmation = async ({ to, patientName, doctorName, date, 
 };
 
 /**
- * Send booking notification to the clinic/doctor
+ * Send booking notification to the clinic/expert
  */
-const sendBookingNotification = async ({ doctorEmail, patientName, patientPhone, date, time, address, purpose }) => {
+const sendBookingNotification = async ({ expertEmail, patientName, patientPhone, date, time, address, purpose }) => {
   const html = emailBase(`
     <h2 style="color:#0f766e; margin-top:0;">New Appointment Booking 📋</h2>
     <p>A new appointment has been booked. Here are the patient details:</p>
@@ -122,7 +122,7 @@ const sendBookingNotification = async ({ doctorEmail, patientName, patientPhone,
       ${purpose ? `<div class="info-row"><span class="info-label">📋 Purpose:</span><span class="info-value">${purpose}</span></div>` : ''}
     </div>
   `);
-  return sendEmail({ to: doctorEmail, subject: `🔔 New Appointment — ${patientName} on ${date} at ${time}`, html });
+  return sendEmail({ to: expertEmail, subject: `🔔 New Appointment — ${patientName} on ${date} at ${time}`, html });
 };
 
 /**
@@ -151,7 +151,7 @@ const sendContactNotification = async ({ name, email, phone, message }) => {
 /**
  * Send appointment status update to patient
  */
-const sendStatusUpdate = async ({ to, patientName, status, date, time, doctorNotes }) => {
+const sendStatusUpdate = async ({ to, patientName, status, date, time, expertNotes }) => {
   const statusMap = {
     confirmed: { label: 'Confirmed ✅', color: '#065f46', bg: '#d1fae5' },
     cancelled: { label: 'Cancelled ❌', color: '#991b1b', bg: '#fee2e2' },
@@ -168,7 +168,7 @@ const sendStatusUpdate = async ({ to, patientName, status, date, time, doctorNot
     <div style="background:#f8fafc; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
       <div class="info-row"><span class="info-label">📅 Date:</span><span class="info-value">${date}</span></div>
       <div class="info-row"><span class="info-label">🕐 Time:</span><span class="info-value">${time}</span></div>
-      ${doctorNotes ? `<div class="info-row"><span class="info-label">📝 Notes:</span><span class="info-value">${doctorNotes}</span></div>` : ''}
+      ${expertNotes ? `<div class="info-row"><span class="info-label">📝 Notes:</span><span class="info-value">${expertNotes}</span></div>` : ''}
     </div>
     <div class="cta">
       <a href="https://wa.me/917340820883">Questions? Chat with Us</a>

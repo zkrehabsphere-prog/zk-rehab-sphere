@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
 
 // ─── Shared Memory Storage (Vercel-Compatible) ────────────────────────────────
 const storage = multer.memoryStorage();
@@ -39,6 +40,12 @@ const uploadResource = multer({
   fileFilter,
 });
 
+const uploadBlogImage = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB for blog images
+  fileFilter: imageFilter,
+});
+
 
 // ─── Helper: delete old file ───────────────────────────────────────────────────
 const deleteFile = (filePath) => {
@@ -59,7 +66,29 @@ const bufferToBase64 = (file) => {
 module.exports = {
   uploadExpertImage,
   uploadResource,
+  uploadBlogImage,
   deleteFile,
   bufferToBase64,
+  uploadToCloudinary,
 };
+
+// ─── Cloudinary Upload Helper ──────────────────────────────────────────────────
+async function uploadToCloudinary(buffer, folderPath, filename) {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: folderPath || 'zk-rehab-blogs',
+        public_id: filename || `image-${Date.now()}`,
+        resource_type: 'auto',
+        quality: 'auto',
+        format: 'webp',
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+}
 

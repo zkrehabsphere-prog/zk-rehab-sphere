@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
  * Usage:
  *   <ProtectedRoute>                          // Auth required only
  *   <ProtectedRoute roles={['admin']}>        // Admin only
- *   <ProtectedRoute roles={['admin','doctor']}> // Admin or Doctor
+ *   <ProtectedRoute roles={['admin','expert']}> // Admin or Expert
  */
 const ProtectedRoute = ({ children, roles }) => {
   const { isAuthenticated, isLoading, user } = useAuth();

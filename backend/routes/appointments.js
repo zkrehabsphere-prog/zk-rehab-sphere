@@ -28,7 +28,7 @@ router.post('/', protect, async (req, res, next) => {
     }
 
     // Find and validate slot
-    const slot = await Slot.findById(slotId).populate('doctor', 'name email');
+    const slot = await Slot.findById(slotId).populate('expert', 'name email');
     if (!slot) return res.status(404).json({ error: 'Slot not found.' });
     if (slot.isBooked) return res.status(409).json({ error: 'This slot is already booked. Please choose another.' });
     if (!slot.isActive) return res.status(400).json({ error: 'This slot is no longer available.' });
@@ -46,7 +46,7 @@ router.post('/', protect, async (req, res, next) => {
     // Create appointment
     const appointment = await Appointment.create({
       patient: req.user._id,
-      doctor: slot.doctor._id,
+      expert: slot.expert._id,
       slot: slot._id,
       slotDate: slot.date,
       slotTime: slot.time,
@@ -66,24 +66,24 @@ router.post('/', protect, async (req, res, next) => {
     // Populate for response
     await appointment.populate([
       { path: 'patient', select: 'name email photo' },
-      { path: 'doctor', select: 'name email photo' },
+      { path: 'expert', select: 'name email photo' },
     ]);
 
     // Send emails (non-blocking)
     const patientEmail = req.user.email;
-    const doctorEmail = slot.doctor.email;
+    const expertEmail = slot.expert.email;
 
     sendAppointmentConfirmation({
       to: patientEmail,
       patientName,
-      doctorName: slot.doctor.name,
+      expertName: slot.expert.name,
       date: slot.date,
       time: slot.time,
       purpose,
     }).catch(console.error);
 
     sendBookingNotification({
-      doctorEmail,
+      expertEmail,
       patientName,
       patientPhone,
       date: slot.date,
@@ -110,17 +110,17 @@ router.post('/', protect, async (req, res, next) => {
  */
 router.get('/', protect, async (req, res, next) => {
   try {
-    const { status, date, page = 1, limit = 20, patient, doctor } = req.query;
+    const { status, date, page = 1, limit = 20, patient, expert } = req.query;
     const filter = {};
 
     // Scope by role
     if (req.user.role === 'patient') {
       filter.patient = req.user._id;
-    } else if (req.user.role === 'doctor') {
-      filter.doctor = req.user._id;
+    } else if (req.user.role === 'expert') {
+      filter.expert = req.user._id;
     } else if (req.user.role === 'admin') {
       if (patient) filter.patient = patient;
-      if (doctor) filter.doctor = doctor;
+      if (expert) filter.expert = expert;
     }
 
 
@@ -132,7 +132,7 @@ router.get('/', protect, async (req, res, next) => {
     const [appointments, total] = await Promise.all([
       Appointment.find(filter)
         .populate('patient', 'name email photo phone')
-        .populate('doctor', 'name email photo')
+        .populate('expert', 'name email photo')
         .populate('slot', 'date time')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -163,17 +163,17 @@ router.get('/:id', protect, async (req, res, next) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
       .populate('patient', 'name email photo phone address')
-      .populate('doctor', 'name email photo')
+      .populate('expert', 'name email photo')
       .populate('slot', 'date time');
 
     if (!appointment) return res.status(404).json({ error: 'Appointment not found.' });
 
     // Access control
     const isOwner = appointment.patient._id.toString() === req.user._id.toString();
-    const isDoctor = req.user.role === 'doctor' && appointment.doctor._id.toString() === req.user._id.toString();
+    const isExpert = req.user.role === 'expert' && appointment.expert._id.toString() === req.user._id.toString();
     const isAdmin = req.user.role === 'admin';
 
-    if (!isOwner && !isDoctor && !isAdmin) {
+    if (!isOwner && !isExpert && !isAdmin) {
       return res.status(403).json({ error: 'Access denied.' });
     }
 
@@ -185,12 +185,12 @@ router.get('/:id', protect, async (req, res, next) => {
 
 /**
  * PATCH /api/appointments/:id/status
- * Doctor/Admin: Update appointment status and add notes
- * Body: { status, doctorNotes, cancelReason }
+ * Expert/Admin: Update appointment status and add notes
+ * Body: { status, expertNotes, cancelReason }
  */
-router.patch('/:id/status', protect, requireRole('admin', 'doctor'), async (req, res, next) => {
+router.patch('/:id/status', protect, requireRole('admin', 'expert'), async (req, res, next) => {
   try {
-    const { status, doctorNotes, cancelReason } = req.body;
+    const { status, expertNotes, cancelReason } = req.body;
 
     const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
     if (!validStatuses.includes(status)) {
@@ -199,12 +199,12 @@ router.patch('/:id/status', protect, requireRole('admin', 'doctor'), async (req,
 
     const appointment = await Appointment.findById(req.params.id)
       .populate('patient', 'name email')
-      .populate('doctor', 'name email');
+      .populate('expert', 'name email');
 
     if (!appointment) return res.status(404).json({ error: 'Appointment not found.' });
 
-    // Doctor can only update their own appointments
-    if (req.user.role === 'doctor' && appointment.doctor._id.toString() !== req.user._id.toString()) {
+    // Expert can only update their own appointments
+    if (req.user.role === 'expert' && appointment.expert._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'You can only update your own appointments.' });
     }
 
@@ -214,7 +214,7 @@ router.patch('/:id/status', protect, requireRole('admin', 'doctor'), async (req,
     }
 
     appointment.status = status;
-    if (doctorNotes !== undefined) appointment.doctorNotes = doctorNotes;
+    if (expertNotes !== undefined) appointment.expertNotes = expertNotes;
     if (cancelReason !== undefined) appointment.cancelReason = cancelReason;
 
     await appointment.save();
@@ -227,7 +227,7 @@ router.patch('/:id/status', protect, requireRole('admin', 'doctor'), async (req,
         status,
         date: appointment.slotDate,
         time: appointment.slotTime,
-        doctorNotes: appointment.doctorNotes,
+        doctorNotes: appointment.expertNotes,
       }).catch(console.error);
     }
 

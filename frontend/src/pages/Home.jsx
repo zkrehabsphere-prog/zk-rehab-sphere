@@ -5,7 +5,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import SectionTitle from '../components/SectionTitle';
 import BookingModal from '../components/BookingModal';
-import DoctorCard from '../components/DoctorCard';
+import ExpertCard from '../components/ExpertCard';
 import ExpertBioModal from '../components/ExpertBioModal';
 import { expertsAPI } from '../api/axios';
 
@@ -202,9 +202,9 @@ const Home = () => {
               <div className="col-span-full text-center py-12 text-slate-500">Loading doctors...</div>
             ) : experts.length > 0 ? (
               experts.slice(0, 3).map((expert) => (
-                <DoctorCard 
+                <ExpertCard 
                   key={expert._id} 
-                  doctor={expert} 
+                  expert={expert} 
                   onViewProfile={handleViewProfile} 
                 />
               ))

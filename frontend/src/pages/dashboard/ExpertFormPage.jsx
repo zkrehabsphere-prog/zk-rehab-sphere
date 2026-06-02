@@ -38,7 +38,7 @@ const ExpertFormPage = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await usersAPI.getAll({ role: 'doctor', limit: 100 });
+      const res = await usersAPI.getAll({ role: 'expert', limit: 100 });
       setUsers(res.data.users || []);
     } catch (err) {
       console.error('Failed to fetch users:', err);

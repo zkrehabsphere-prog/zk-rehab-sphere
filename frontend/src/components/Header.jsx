@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
-import { Menu, X, LayoutDashboard, LogOut, ChevronDown, User, Plus } from 'lucide-react';
+import { Menu, X, LayoutDashboard, LogOut, ChevronDown, User, Plus, FileText } from 'lucide-react';
 
 import Button from './Button';
 import BookingModal from './BookingModal';
@@ -13,7 +13,7 @@ const Header = () => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const location = useLocation();
-  const { user, isAuthenticated, login, logout, getDashboardPath } = useAuth();
+  const { user, isAuthenticated, login, logout, getDashboardPath, isLoginPending } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -39,13 +39,32 @@ const Header = () => {
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
     { name: 'Services', path: '/services' },
-    { name: 'Doctors', path: '/experts' },
+    { name: 'Experts', path: '/experts' },
     { name: 'Blog', path: '/blog' },
     { name: 'Resources', path: '/resources' },
     { name: 'Contact', path: '/contact' },
   ];
 
-  const roleColors = { admin: 'text-purple-600', doctor: 'text-blue-600', patient: 'text-green-600' };
+  const roleColors = { admin: 'text-purple-600', expert: 'text-blue-600', patient: 'text-green-600' };
+
+  const getAvatarInitial = (name) => {
+    if (!name) return '?';
+    return name.trim().charAt(0).toUpperCase();
+  };
+
+  const renderAvatar = (photoUrl, name, sizeClass = 'w-8 h-8') => {
+    if (photoUrl) {
+      return (
+        <img src={photoUrl} alt={name} className={`${sizeClass} rounded-full object-cover border border-slate-200`} />
+      );
+    }
+
+    return (
+      <div className={`${sizeClass} rounded-full border border-slate-200 bg-primary/10 text-primary flex items-center justify-center font-semibold`}>
+        {getAvatarInitial(name)}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -95,7 +114,7 @@ const Header = () => {
                     onClick={(e) => { e.stopPropagation(); setIsUserMenuOpen(!isUserMenuOpen); }}
                     className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-slate-200 bg-white hover:shadow-md transition-all"
                   >
-                    <img src={user.photo} alt={user.name} className="w-8 h-8 rounded-full object-cover border border-slate-200" />
+                    {renderAvatar(user.photo, user.name, 'w-8 h-8')}
                     <span className="text-sm font-semibold text-slate-700 max-w-[100px] truncate">{user.name.split(' ')[0]}</span>
                     <ChevronDown size={14} className="text-slate-400" />
                   </button>
@@ -114,12 +133,20 @@ const Header = () => {
                         <LayoutDashboard size={16} className="text-slate-400" /> Dashboard
                       </Link>
                       {user.role === 'admin' && (
-                        <Link
-                          to="/dashboard/admin/experts/new"
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-primary font-bold hover:bg-primary/5 transition-colors"
-                        >
-                          <Plus size={16} className="text-primary" /> Add Doctor
-                        </Link>
+                        <>
+                          <Link
+                            to="/dashboard/admin/experts/new"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-primary font-bold hover:bg-primary/5 transition-colors"
+                          >
+                            <Plus size={16} className="text-primary" /> Add Expert
+                          </Link>
+                          <Link
+                            to="/dashboard/admin/blogs/new"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-primary font-bold hover:bg-primary/5 transition-colors"
+                          >
+                            <FileText size={16} className="text-primary" /> Add Blog
+                          </Link>
+                        </>
                       )}
                       <Link
                         to="/profile"
@@ -140,7 +167,7 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Button variant="secondary" size="sm" onClick={login}>Sign In</Button>
+                <Button variant="secondary" size="sm" onClick={login} disabled={isLoginPending}>Sign In</Button>
                 <Button size="sm" onClick={() => setIsBookingOpen(true)}>Book Appointment</Button>
               </>
             )}
@@ -176,7 +203,7 @@ const Header = () => {
             {isAuthenticated && user ? (
               <>
                 <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl">
-                  <img src={user.photo} alt={user.name} className="w-10 h-10 rounded-full border border-slate-200" />
+                  {renderAvatar(user.photo, user.name, 'w-10 h-10')}
                   <div>
                     <p className="font-bold text-slate-800 text-sm">{user.name}</p>
                     <p className={`text-xs font-semibold capitalize ${roleColors[user.role] || ''}`}>{user.role}</p>
@@ -189,12 +216,20 @@ const Header = () => {
                   <LayoutDashboard size={18} /> Dashboard
                 </Link>
                 {user.role === 'admin' && (
-                  <Link
-                    to="/dashboard/admin/experts/new"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg font-bold text-primary hover:bg-primary/5 transition-colors"
-                  >
-                    <Plus size={18} /> Add Doctor
-                  </Link>
+                  <>
+                    <Link
+                      to="/dashboard/admin/experts/new"
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-bold text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <Plus size={18} /> Add Expert
+                    </Link>
+                    <Link
+                      to="/dashboard/admin/blogs/new"
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-bold text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <FileText size={18} /> Add Blog
+                    </Link>
+                  </>
                 )}
                 <Link
                   to="/profile"
@@ -216,7 +251,7 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Button variant="secondary" onClick={login} className="w-full justify-center">Sign in with Google</Button>
+                <Button variant="secondary" onClick={login} className="w-full justify-center" disabled={isLoginPending}>Sign in with Google</Button>
                 <Button onClick={() => { setIsMobileMenuOpen(false); setIsBookingOpen(true); }} className="w-full justify-center">Book Appointment</Button>
               </>
             )}

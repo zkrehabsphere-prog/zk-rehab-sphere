@@ -4,7 +4,7 @@
  *
  * Usage:
  *   router.delete('/:id', protect, requireRole('admin'), handler)
- *   router.patch('/:id', protect, requireRole('admin', 'doctor'), handler)
+ *   router.patch('/:id', protect, requireRole('admin', 'expert'), handler)
  */
 const requireRole = (...roles) => {
   return (req, res, next) => {
@@ -26,8 +26,8 @@ const requireRole = (...roles) => {
 };
 
 /**
- * Check ownership or admin/doctor access
- * Allows if: user is admin, user is doctor, or user owns the resource
+ * Check ownership or admin/expert access
+ * Allows if: user is admin, user is expert, or user owns the resource
  * Usage: after protect, pass the userId field name in the resource
  */
 const requireOwnerOrRole = (...roles) => {
@@ -37,7 +37,7 @@ const requireOwnerOrRole = (...roles) => {
     }
 
     if (roles.includes(req.user.role)) {
-      return next(); // Admin/Doctor pass through
+      return next(); // Admin/Expert pass through
     }
 
     // Will be checked in the specific handler using req.user._id

@@ -5,8 +5,8 @@ import { jsPDF } from 'jspdf';
 import { slotsAPI, appointmentsAPI } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
-const BookingModal = ({ isOpen, onClose }) => {
-  const { isAuthenticated, user, login } = useAuth();
+const BookingModal = ({ isOpen, onClose, selectedExpertId = null }) => {
+  const { isAuthenticated, user, login, isLoginPending } = useAuth();
   const [step, setStep] = useState('select-slot'); // 'select-slot' | 'details' | 'loading' | 'success' | 'error'
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [freeSlots, setFreeSlots] = useState([]);
@@ -34,7 +34,9 @@ const BookingModal = ({ isOpen, onClose }) => {
   const fetchSlots = async () => {
     setSlotsLoading(true);
     try {
-      const res = await slotsAPI.getAvailable();
+      const params = {};
+      if (selectedExpertId) params.expertId = selectedExpertId;
+      const res = await slotsAPI.getAvailable(params);
       const allSlots = res.data.slots || [];
       
       // Filter out slots that are in the past (especially for Today)
@@ -75,8 +77,8 @@ const BookingModal = ({ isOpen, onClose }) => {
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-2">Sign in to Book</h2>
           <p className="text-slate-500 mb-6">You need to be signed in to book an appointment. We use Google Sign-In to keep your records safe and secure.</p>
-          <Button onClick={login} className="w-full justify-center gap-2 mb-3">
-            Sign in with Google
+          <Button onClick={login} disabled={isLoginPending} className="w-full justify-center gap-2 mb-3">
+            {isLoginPending ? 'Signing in...' : 'Sign in with Google'}
           </Button>
           <button onClick={onClose} className="w-full text-slate-500 hover:text-slate-700 text-sm py-2 transition-colors">Maybe later</button>
         </div>
@@ -103,7 +105,7 @@ const BookingModal = ({ isOpen, onClose }) => {
       ['Age', String(apt.patientAge)],
       ['Phone', apt.patientPhone],
       ['Address', apt.patientAddress],
-      ['Doctor', slot.doctor?.name || 'ZK Rehab Expert'],
+      ['Expert', slot.expert?.name || 'ZK Rehab Expert'],
       ['Date', slot.date],
       ['Time', slot.time],
       ['Booking ID', apt._id],
@@ -230,7 +232,7 @@ const BookingModal = ({ isOpen, onClose }) => {
                           >
                             <Clock size={14} className="text-slate-400 mb-1 group-hover:text-primary" />
                             <span className="text-sm font-bold text-slate-800 group-hover:text-primary">{slot.time}</span>
-                            {slot.doctor && <span className="text-[10px] text-slate-400 mt-0.5 truncate w-full text-center">{slot.doctor.name.split(' ')[1]}</span>}
+                            {slot.expert && <span className="text-[10px] text-slate-400 mt-0.5 truncate w-full text-center">{slot.expert.name.split(' ')[1]}</span>}
                           </button>
                         ))}
                       </div>
@@ -248,7 +250,7 @@ const BookingModal = ({ isOpen, onClose }) => {
               <div className="bg-blue-50 p-3 rounded-xl flex items-center gap-3 text-sm text-blue-800 border border-blue-100">
                 <Clock size={16} />
                 <span className="font-semibold">{formatDate(selectedSlot?.date)} at {selectedSlot?.time}</span>
-                {selectedSlot?.doctor && <span className="text-blue-600">· {selectedSlot.doctor.name}</span>}
+                {selectedSlot?.expert && <span className="text-blue-600">· {selectedSlot.expert.name}</span>}
                 <button type="button" onClick={() => setStep('select-slot')} className="ml-auto text-xs underline hover:text-blue-900">Change</button>
               </div>
 

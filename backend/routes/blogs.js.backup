@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const BlogPost = require('../models/BlogPost');
 const { protect } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
@@ -127,55 +127,53 @@ router.get('/:slug', async (req, res, next) => {
 });
 
 /**
- * POST /api/blogs - Create blog with image uploads to Cloudinary
+ * POST /api/blogs
+ * Admin: Create a new blog post with image uploads
  */
 router.post('/', protect, requireRole('admin'), uploadBlogImage.fields([
   { name: 'coverImage', maxCount: 1 },
   { name: 'gallery', maxCount: 10 },
 ]), async (req, res, next) => {
   try {
-    const parseJSON = (val, def) => {
-      if (typeof val === 'string') {
-        try {
-          return JSON.parse(val);
-        } catch (e) {
-          return def;
-        }
-      }
-      return val || def;
-    };
+    let coverImageUrl = req.body.coverImage;
+    let galleryUrls = req.body.gallery || [];
 
-    let coverImageUrl = null;
-    let galleryUrls = [];
-
+    // Upload cover image to Cloudinary if provided
     if (req.files?.coverImage?.[0]) {
       try {
-        const result = await uploadToCloudinary(req.files.coverImage[0].buffer, 'zk-rehab-blogs/covers', 'log-cover-' + Date.now());
+        const result = await uploadToCloudinary(
+          req.files.coverImage[0].buffer,
+          'zk-rehab-blogs/covers',
+          `blog-cover-${Date.now()}`
+        );
         coverImageUrl = result.secure_url;
       } catch (err) {
-        return res.status(400).json({ error: 'Cover image upload failed: ' + err.message });
+        console.error('Cover image upload failed:', err);
+        return res.status(400).json({ error: 'Failed to upload cover image' });
       }
     }
 
+    // Upload gallery images to Cloudinary if provided
     if (req.files?.gallery?.length > 0) {
       try {
-        const uploads = req.files.gallery.map((f, i) => uploadToCloudinary(f.buffer, 'zk-rehab-blogs/gallery', 'log-gallery-' + Date.now() + '-' + i));
-        const results = await Promise.all(uploads);
+        const uploadPromises = req.files.gallery.map((file, index) =>
+          uploadToCloudinary(
+            file.buffer,
+            'zk-rehab-blogs/gallery',
+            `blog-gallery-${Date.now()}-${index}`
+          )
+        );
+        const results = await Promise.all(uploadPromises);
         galleryUrls = results.map(r => r.secure_url);
       } catch (err) {
-        return res.status(400).json({ error: 'Gallery upload failed: ' + err.message });
+        console.error('Gallery upload failed:', err);
+        return res.status(400).json({ error: 'Failed to upload gallery images' });
       }
     }
 
     const blog = await BlogPost.create({
       ...req.body,
-      author: parseJSON(req.body.author, { name: 'ZK Rehab Sphere', role: 'Medical Team', image: '' }),
-      sections: parseJSON(req.body.sections, []),
-      faqs: parseJSON(req.body.faqs, []),
-      cta: parseJSON(req.body.cta, {}),
-      tags: parseJSON(req.body.tags, []),
-      seoKeywords: parseJSON(req.body.seoKeywords, []),
-      coverImage: coverImageUrl || '',
+      coverImage: coverImageUrl,
       gallery: galleryUrls,
       publishedAt: req.body.publishedAt || Date.now(),
     });
@@ -187,7 +185,8 @@ router.post('/', protect, requireRole('admin'), uploadBlogImage.fields([
 });
 
 /**
- * PUT /api/blogs/:id - Update blog with image uploads
+ * PUT /api/blogs/:id
+ * Admin: Update a blog post with image uploads
  */
 router.put('/:id', protect, requireRole('admin'), uploadBlogImage.fields([
   { name: 'coverImage', maxCount: 1 },
@@ -197,53 +196,59 @@ router.put('/:id', protect, requireRole('admin'), uploadBlogImage.fields([
     const blog = await BlogPost.findById(req.params.id);
     if (!blog) return res.status(404).json({ error: 'Blog post not found.' });
 
-    const parseJSON = (val, def) => {
-      if (typeof val === 'string') {
-        try {
-          return JSON.parse(val);
-        } catch (e) {
-          return def;
-        }
-      }
-      return val || def;
-    };
-
     let updateData = { ...req.body };
 
+    // Upload new cover image to Cloudinary if provided
     if (req.files?.coverImage?.[0]) {
       try {
-        const result = await uploadToCloudinary(req.files.coverImage[0].buffer, 'zk-rehab-blogs/covers', 'log-cover-' + Date.now());
+        const result = await uploadToCloudinary(
+          req.files.coverImage[0].buffer,
+          'zk-rehab-blogs/covers',
+          `blog-cover-${Date.now()}`
+        );
         updateData.coverImage = result.secure_url;
       } catch (err) {
-        return res.status(400).json({ error: 'Cover image upload failed: ' + err.message });
+        console.error('Cover image upload failed:', err);
+        return res.status(400).json({ error: 'Failed to upload cover image' });
       }
     }
 
+    // Upload new gallery images to Cloudinary if provided
     if (req.files?.gallery?.length > 0) {
       try {
-        const uploads = req.files.gallery.map((f, i) => uploadToCloudinary(f.buffer, 'zk-rehab-blogs/gallery', 'log-gallery-' + Date.now() + '-' + i));
-        const results = await Promise.all(uploads);
+        const uploadPromises = req.files.gallery.map((file, index) =>
+          uploadToCloudinary(
+            file.buffer,
+            'zk-rehab-blogs/gallery',
+            `blog-gallery-${Date.now()}-${index}`
+          )
+        );
+        const results = await Promise.all(uploadPromises);
         const galleryUrls = results.map(r => r.secure_url);
+        // Append new images to existing gallery
         updateData.gallery = [...(blog.gallery || []), ...galleryUrls];
       } catch (err) {
-        return res.status(400).json({ error: 'Gallery upload failed: ' + err.message });
+        console.error('Gallery upload failed:', err);
+        return res.status(400).json({ error: 'Failed to upload gallery images' });
       }
     }
 
-    if (updateData.author) updateData.author = parseJSON(updateData.author);
-    if (updateData.sections) updateData.sections = parseJSON(updateData.sections, []);
-    if (updateData.faqs) updateData.faqs = parseJSON(updateData.faqs, []);
-    if (updateData.cta) updateData.cta = parseJSON(updateData.cta, {});
-    if (updateData.tags) updateData.tags = parseJSON(updateData.tags, []);
-    if (updateData.seoKeywords) updateData.seoKeywords = parseJSON(updateData.seoKeywords, []);
+    const updatedBlog = await BlogPost.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
 
-    const updatedBlog = await BlogPost.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
     res.json({ success: true, blog: updatedBlog });
   } catch (err) {
     next(err);
   }
 });
 
+/**
+ * DELETE /api/blogs/:id
+ * Admin: Delete a blog post
+ */
 router.delete('/:id', protect, requireRole('admin'), async (req, res, next) => {
   try {
     const blog = await BlogPost.findByIdAndDelete(req.params.id);
@@ -254,6 +259,10 @@ router.delete('/:id', protect, requireRole('admin'), async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/blogs/:id/like
+ * Public: Increment likes counter
+ */
 router.post('/:id/like', async (req, res, next) => {
   try {
     const blog = await BlogPost.findByIdAndUpdate(req.params.id, { $inc: { likes: 1 } }, { new: true });
@@ -264,6 +273,10 @@ router.post('/:id/like', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/blogs/:id/share
+ * Public: Increment shares counter
+ */
 router.post('/:id/share', async (req, res, next) => {
   try {
     const blog = await BlogPost.findByIdAndUpdate(req.params.id, { $inc: { shares: 1 } }, { new: true });

@@ -5,10 +5,10 @@ import {
   Clock, ChevronDown, Plus, Shield, Edit, BarChart2, Mail, RefreshCw, X, Phone, FileText, Folder
 } from 'lucide-react';
 
-
 import { useAuth } from '../../context/AuthContext';
 import { usersAPI, appointmentsAPI, contactAPI, expertsAPI, slotsAPI, newsletterAPI, blogsAPI, resourcesAPI } from '../../api/axios';
 import SEO from '../../components/SEO';
+import { resolveImageUrl } from '../../utils/imageUtils';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -44,7 +44,7 @@ const StatusBadge = ({ status }) => {
 const RoleBadge = ({ role }) => {
   const cfg = {
     admin: 'bg-purple-100 text-purple-800',
-    doctor: 'bg-blue-100 text-blue-800',
+    expert: 'bg-blue-100 text-blue-800',
     patient: 'bg-green-100 text-green-800',
   };
   return (
@@ -54,12 +54,32 @@ const RoleBadge = ({ role }) => {
   );
 };
 
+const normalizeExpertRecords = (users = [], profiles = []) => {
+  const mergedExperts = users.map((user) => {
+    const profile = profiles.find(
+      (e) => e.linkedUserId?._id === user._id || e.linkedUserId === user._id
+    );
+    return { type: 'user', user, profile };
+  });
+
+  const standaloneProfiles = profiles
+    .filter(
+      (profile) =>
+        !users.some(
+          (user) => profile.linkedUserId?._id === user._id || profile.linkedUserId === user._id
+        )
+    )
+    .map((profile) => ({ type: 'profile', profile }));
+
+  return [...mergedExperts, ...standaloneProfiles];
+};
+
 // ─── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'overview', label: 'Overview', icon: BarChart2 },
   { id: 'appointments', label: 'Appointments', icon: Calendar },
   { id: 'slots', label: 'Slots', icon: Clock },
-  { id: 'experts', label: 'Doctors', icon: Activity },
+  { id: 'experts', label: 'Experts', icon: Activity },
   { id: 'users', label: 'Patients', icon: Users },
   { id: 'blogs', label: 'Blogs', icon: FileText },
   { id: 'resources', label: 'Resources', icon: Folder },
@@ -77,8 +97,35 @@ const AVAILABLE_TIMES = [
 ];
 
 // ─── Add Slot Form ─────────────────────────────────────────────────────────────
-const AddSlotForm = ({ doctors, onCreated }) => {
-  const [form, setForm] = useState({ doctorId: '', date: '', times: [] });
+const extractExpertOption = (item) => {
+  if (item.user) {
+    return {
+      id: item.user._id,
+      label: item.user.name || item.user.email || 'Unnamed Expert',
+      subtitle: item.user.email,
+    };
+  }
+
+  if (item.profile) {
+    const linkedUser = item.profile.linkedUserId;
+    const id = linkedUser?._id || linkedUser || item.profile._id;
+    return {
+      id,
+      label: item.profile.name || item.profile.email || 'Unnamed Expert',
+      subtitle: item.profile.email || (linkedUser?.email || ''),
+    };
+  }
+
+  return {
+    id: item._id,
+    label: item.name || item.displayName || item.email || 'Unnamed Expert',
+    subtitle: item.email || '',
+  };
+};
+
+const AddSlotForm = ({ experts, onCreated }) => {
+  const [form, setForm] = useState({ expertId: '', date: '', times: [] });
+  const [assignExpert, setAssignExpert] = useState(true);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -93,6 +140,11 @@ const AddSlotForm = ({ doctors, onCreated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (assignExpert && !form.expertId) {
+      setMsg('❌ Please select an expert before creating slots.');
+      setTimeout(() => setMsg(''), 3000);
+      return;
+    }
     if (form.times.length === 0) {
       setMsg('❌ Please select at least one time slot.');
       setTimeout(() => setMsg(''), 3000);
@@ -100,9 +152,13 @@ const AddSlotForm = ({ doctors, onCreated }) => {
     }
     setLoading(true);
     try {
-      await slotsAPI.create({ doctorId: form.doctorId, date: form.date, times: form.times });
+      await slotsAPI.create({
+        expertId: assignExpert ? form.expertId : undefined,
+        date: form.date,
+        times: form.times,
+      });
       setMsg(`✅ Slots created!`);
-      setForm({ doctorId: '', date: '', times: [] });
+      setForm({ expertId: '', date: '', times: [] });
       if (onCreated) onCreated();
     } catch (err) {
       setMsg(`❌ ${err.message}`);
@@ -112,24 +168,63 @@ const AddSlotForm = ({ doctors, onCreated }) => {
     }
   };
 
+  const expertOptions = experts.map((item) => extractExpertOption(item)).filter(opt => opt.id);
+  const expertCount = expertOptions.length;
+
   return (
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
       <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus size={16} /> Add Slots</h3>
-      
+      <div className="mb-4">
+        <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
+          <input
+            type="checkbox"
+            checked={assignExpert}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setAssignExpert(next);
+              if (!next) {
+                setForm((prev) => ({ ...prev, expertId: '' }));
+              }
+            }}
+            className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+          />
+          Assign an expert now
+        </label>
+        <p className="text-sm text-slate-500 mt-2">
+          {assignExpert
+            ? 'Pick the expert who will own this slot.'
+            : 'Create an open slot without an assigned expert. You can assign one later.'}
+        </p>
+      </div>
+      {assignExpert ? (
+        expertCount > 0 ? (
+          <p className="text-sm text-slate-500 mb-4">Select from {expertCount} expert{expertCount === 1 ? '' : 's'} below.</p>
+        ) : (
+          <p className="text-sm text-red-500 mb-4">No experts found. Please add expert accounts first in the Experts tab or switch to open slot mode.</p>
+        )
+      ) : (
+        <p className="text-sm text-slate-500 mb-4">This will create an open slot without an assigned expert. You can assign the expert later.</p>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">Doctor</label>
-          <select
-            required
-            value={form.doctorId}
-            onChange={(e) => setForm({ ...form, doctorId: e.target.value })}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-          >
-            <option value="">Select Doctor</option>
-            {doctors.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-          </select>
-        </div>
-        <div>
+        {assignExpert && (
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">Expert</label>
+            <select
+              required={assignExpert}
+              value={form.expertId}
+              onChange={(e) => setForm({ ...form, expertId: e.target.value })}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            >
+              <option value="">Select Expert</option>
+              {expertOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}{option.subtitle ? ` — ${option.subtitle}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className={assignExpert ? '' : 'md:col-span-2'}>
           <label className="block text-xs font-semibold text-slate-500 mb-1">Date</label>
           <input
             type="date"
@@ -184,8 +279,12 @@ const AddSlotForm = ({ doctors, onCreated }) => {
       
       {msg && <p className={`mt-3 text-sm font-semibold ${msg.startsWith('❌') ? 'text-red-500' : 'text-green-600'}`}>{msg}</p>}
       
-      <button type="submit" disabled={loading} className="mt-4 px-6 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50">
-        {loading ? 'Creating...' : 'Create Slots'}
+      <button
+        type="submit"
+        disabled={loading || (assignExpert && expertCount === 0)}
+        className="mt-4 px-6 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50"
+      >
+        {loading ? 'Creating...' : assignExpert ? 'Create Slots' : 'Create Open Slot'}
       </button>
     </form>
   );
@@ -292,7 +391,7 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
   const fetchHistory = async () => {
     setLoadingHistory(true);
     try {
-      const roleKey = user.role === 'doctor' ? 'doctor' : 'patient';
+      const roleKey = user.role === 'expert' ? 'expert' : 'patient';
       const res = await appointmentsAPI.getAll({ [roleKey]: user._id, limit: 10 });
       setHistory(res.data.appointments || []);
     } catch (err) {
@@ -304,7 +403,7 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
 
   if (!isOpen || !user) return null;
   const expert = user.profile;
-  const isDoctor = user.role === 'doctor';
+  const isexpert = user.role === 'expert';
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -312,8 +411,8 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
       <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-8 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            {isDoctor ? <Activity className="text-primary" /> : <UserCheck className="text-green-500" />}
-            {isDoctor ? 'Doctor Profile Details' : 'Patient Account Details'}
+            {isexpert ? <Activity className="text-primary" /> : <UserCheck className="text-green-500" />}
+            {isexpert ? 'expert Profile Details' : 'Patient Account Details'}
           </h2>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"><X /></button>
         </div>
@@ -337,7 +436,7 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
             <div>
               <h1 className="text-3xl font-extrabold text-slate-900 mb-1">{user.name}</h1>
               <p className="text-primary font-bold uppercase tracking-widest text-sm">
-                {isDoctor && expert ? `${expert.role} · ${expert.degree}` : `Role: ${user.role}`}
+                {isexpert && expert ? `${expert.role} · ${expert.degree}` : `Role: ${user.role}`}
               </p>
             </div>
 
@@ -363,7 +462,7 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-600">
                       <Clock size={14} className="text-orange-500" /> 
-                      {isDoctor ? `Experience: ${expert?.experience || 'N/A'}` : `Joined: ${new Date(user.createdAt).toLocaleDateString()}`}
+                      {isexpert ? `Experience: ${expert?.experience || 'N/A'}` : `Joined: ${new Date(user.createdAt).toLocaleDateString()}`}
                     </div>
                   </div>
                </div>
@@ -396,7 +495,7 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
                       <p className="text-lg font-black text-slate-800">{apt.slotDate.split('-')[0]}</p>
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800 text-sm">{isDoctor ? apt.patientName : `Dr. ${apt.doctor?.name || 'Unknown'}`}</p>
+                      <p className="font-bold text-slate-800 text-sm">{isexpert ? apt.patientName : `Dr. ${apt.expert?.name || 'Unknown'}`}</p>
                       <p className="text-slate-500 text-xs">{apt.slotTime}</p>
                     </div>
                   </div>
@@ -411,7 +510,7 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
           )}
         </div>
 
-        {isDoctor && expert && (
+        {isexpert && expert && (
           <div className="space-y-6 pt-8 mt-8 border-t border-slate-100">
             <div>
               <h3 className="text-lg font-bold text-slate-800 mb-2">Professional Bio</h3>
@@ -434,9 +533,9 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
         )}
 
         <div className="flex justify-end gap-3 mt-10">
-          {isDoctor && (
+          {isexpert && (
             <a 
-              href={expert ? `/dashboard/admin/experts/edit/${expert._id}` : `/dashboard/admin/experts/new?userId=${user._id}`} 
+              href={expert ? `/dashboard/admin/experts/${expert._id}/edit` : `/dashboard/admin/experts/new?userId=${user._id}`} 
               className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
             >
               <Edit size={16} /> {expert ? 'Edit Profile' : 'Create Profile'}
@@ -466,7 +565,6 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [subscribers, setSubscribers] = useState([]);
-  const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [roleFilter, setRoleFilter] = useState('patient'); // Reverting back to patient as default for this section
 
@@ -491,23 +589,39 @@ const AdminDashboard = () => {
         const res = await appointmentsAPI.getAll({ limit: 50 });
         setAppointments(res.data.appointments || []);
       } else if (tab === 'slots') {
-        const [slotsRes, usersRes] = await Promise.all([slotsAPI.getAll(), usersAPI.getAll({ role: 'doctor', limit: 100 })]);
-        setSlots(slotsRes.data.slots || []);
-        setDoctors(usersRes.data.users || []);
-      } else if (tab === 'experts') {
-        // Fetch all users with role 'doctor' AND all expert profiles
-        const [usersRes, expertsRes] = await Promise.all([
-          usersAPI.getAll({ role: 'doctor', limit: 100 }),
-          expertsAPI.getAllAdmin()
+        const [slotsRes, usersRes, expertsRes] = await Promise.all([
+          slotsAPI.getAll(),
+          usersAPI.getAll({ role: 'expert', limit: 100 }),
+          expertsAPI.getAllAdmin(),
         ]);
-        
-        // Merge them: Each doctor user might have a profile
-        const allDoctors = (usersRes.data.users || []).map(u => {
-          const profile = (expertsRes.data.experts || []).find(e => e.linkedUserId?._id === u._id || e.linkedUserId === u._id);
-          return { ...u, profile };
+        setSlots(slotsRes.data.slots || []);
+        setExperts(normalizeExpertRecords(usersRes.data.users || [], expertsRes.data.experts || []));
+      } else if (tab === 'experts') {
+        // Fetch expert users plus all expert profiles so admin can see both linked and standalone profiles.
+        const [usersRes, expertsRes] = await Promise.all([
+          usersAPI.getAll({ role: 'expert', limit: 100 }),
+          expertsAPI.getAllAdmin(),
+        ]);
+
+        const users = usersRes.data.users || [];
+        const profiles = expertsRes.data.experts || [];
+
+        const mergedExperts = users.map((user) => {
+          const profile = profiles.find(
+            (e) => e.linkedUserId?._id === user._id || e.linkedUserId === user._id
+          );
+          return { type: 'user', user, profile };
         });
-        
-        setExperts(allDoctors);
+
+        const standaloneProfiles = profiles
+          .filter((profile) =>
+            !users.some(
+              (user) => profile.linkedUserId?._id === user._id || profile.linkedUserId === user._id
+            )
+          )
+          .map((profile) => ({ type: 'profile', profile }));
+
+        setExperts([...mergedExperts, ...standaloneProfiles]);
 
       } else if (tab === 'users') {
         const res = await usersAPI.getAll({ role: roleFilter, limit: 100 });
@@ -689,7 +803,7 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-blue-500" bg="bg-blue-50" />
               <StatCard icon={UserCheck} label="Patients" value={stats.totalPatients} color="bg-green-500" bg="bg-green-50" />
-              <StatCard icon={Activity} label="Doctors" value={stats.totalDoctors} color="bg-purple-500" bg="bg-purple-50" />
+              <StatCard icon={Activity} label="experts" value={stats.totalexperts} color="bg-purple-500" bg="bg-purple-50" />
               <StatCard icon={Calendar} label="Appointments" value={stats.totalAppointments} color="bg-orange-500" bg="bg-orange-50" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -712,7 +826,7 @@ const AdminDashboard = () => {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    {['Patient', 'Doctor', 'Date & Time', 'Purpose', 'Status', 'Actions'].map(h => (
+                    {['Patient', 'expert', 'Date & Time', 'Purpose', 'Status', 'Actions'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -724,7 +838,7 @@ const AdminDashboard = () => {
                         <div className="font-medium text-slate-800">{apt.patientName}</div>
                         <div className="text-slate-400 text-xs">{apt.patientPhone}</div>
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{apt.doctor?.name || 'N/A'}</td>
+                      <td className="px-4 py-3 text-slate-600">{apt.expert?.name || 'N/A'}</td>
                       <td className="px-4 py-3">
                         <div className="text-slate-800">{apt.slotDate}</div>
                         <div className="text-slate-400 text-xs">{apt.slotTime}</div>
@@ -770,7 +884,7 @@ const AdminDashboard = () => {
         {/* ── Slots ── */}
         {activeTab === 'slots' && !loading && (
           <div>
-            <AddSlotForm doctors={doctors} onCreated={() => fetchData('slots')} />
+            <AddSlotForm experts={experts} onCreated={() => fetchData('slots')} />
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="px-6 py-4 border-b border-slate-100">
                 <h2 className="font-bold text-slate-800">All Slots ({slots.length})</h2>
@@ -779,7 +893,7 @@ const AdminDashboard = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50">
                     <tr>
-                      {['Doctor', 'Date', 'Time', 'Status', 'Actions'].map(h => (
+                      {['expert', 'Date', 'Time', 'Status', 'Actions'].map(h => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
@@ -787,7 +901,7 @@ const AdminDashboard = () => {
                   <tbody className="divide-y divide-slate-100">
                     {slots.map((slot) => (
                       <tr key={slot._id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">{slot.doctor?.name || 'N/A'}</td>
+                        <td className="px-4 py-3">{slot.expert?.name || 'N/A'}</td>
                         <td className="px-4 py-3">{slot.date}</td>
                         <td className="px-4 py-3">{slot.time}</td>
                         <td className="px-4 py-3">
@@ -821,80 +935,91 @@ const AdminDashboard = () => {
               </a>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {experts.map((doc) => {
-                const expert = doc.profile;
+              {experts.map((entry) => {
+                const isProfileOnly = entry.type === 'profile';
+                const user = entry.user;
+                const expert = entry.profile;
+                const displayName = user?.name || expert?.name || 'Unknown Expert';
+                const displayRole = expert?.role || user?.role || 'Expert';
+                const displayEmail = expert?.linkedUserId?.email || user?.email || expert?.email;
+                const displayPhone = expert?.phone || user?.phone;
+                const imageUrl = expert?.image?.startsWith('/uploads')
+                  ? `${API_BASE}${expert.image}`
+                  : expert?.image || user?.photo || '/placeholder.jpg';
+                const profileId = expert?._id;
+                const cardKey = isProfileOnly ? `profile-${profileId}` : `user-${user._id}`;
+
                 return (
-                  <div key={doc._id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div key={cardKey} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3 mb-3">
                       <img
-                        src={expert?.image?.startsWith('/uploads') ? `${API_BASE}${expert.image}` : expert?.image || doc.photo || '/placeholder.jpg'}
-                        alt={doc.name}
+                        src={imageUrl}
+                        alt={displayName}
                         className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-bold text-slate-800 text-sm">{doc.name}</h3>
-                          <RoleBadge role={doc.role} />
+                          <h3 className="font-bold text-slate-800 text-sm">{displayName}</h3>
+                          <RoleBadge role={user?.role || 'expert'} />
                         </div>
-                        <p className="text-slate-500 text-[10px] truncate mb-1">{expert?.email || doc.email} {(expert?.phone || doc.phone) && `| ${expert?.phone || doc.phone}`}</p>
+                        <p className="text-slate-500 text-[10px] truncate mb-1">{displayEmail} {displayPhone && `| ${displayPhone}`}</p>
                         <p className="text-primary font-bold text-[10px] uppercase tracking-wider">
                           {expert ? `${expert.role} · ${expert.degree}` : 'No Profile Set Up'}
                         </p>
-                        {expert && (
+                        {expert?.experience && (
                           <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
-                             <Clock size={10} /> {expert.experience}
+                            <Clock size={10} /> {expert.experience}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    
                     {expert ? (
                       <div className="flex items-center gap-2 mt-2">
-                        <button 
+                        <button
                           onClick={() => handleToggleExpertActive(expert)}
                           className={`flex-1 text-center py-1 rounded-lg text-xs font-semibold transition-colors ${expert.isActive !== false ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                         >
                           {expert.isActive !== false ? 'Visible' : 'Hidden'}
                         </button>
-                        <button 
-                          onClick={() => handleViewUser(doc)}
-                          className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
-                          title="View Full Details"
-                        >
-                          <Eye size={14} />
-                        </button>
+                        {user && (
+                          <button
+                            onClick={() => handleViewUser(user)}
+                            className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                            title="View Full Details"
+                          >
+                            <Eye size={14} />
+                          </button>
+                        )}
 
-                        <a href={`/dashboard/admin/experts/edit/${expert._id}`} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Profile">
+                        <a href={`/dashboard/admin/experts/${profileId}/edit`} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Profile">
                           <Edit size={14} />
                         </a>
-                        <button onClick={() => handleDeleteExpert(expert._id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Profile">
+                        <button onClick={() => handleDeleteExpert(profileId)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Profile">
                           <Trash2 size={14} />
                         </button>
                       </div>
                     ) : (
                       <div className="mt-2 flex gap-2">
-                        <a 
-                          href={`/dashboard/admin/experts/new?userId=${doc._id}&name=${encodeURIComponent(doc.name)}`}
+                        <a
+                          href={`/dashboard/admin/experts/new?userId=${user._id}&name=${encodeURIComponent(user.name)}`}
                           className="flex-1 text-center py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors"
                         >
                           Create Professional Profile
                         </a>
-                        <button 
-                          onClick={() => handleViewUser(doc)}
+                        <button
+                          onClick={() => handleViewUser(user)}
                           className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
                         >
                           <Eye size={16} />
                         </button>
-
                       </div>
                     )}
-
                   </div>
                 );
               })}
             </div>
-            {experts.length === 0 && <p className="text-center text-slate-400 py-10">No doctor accounts found. Create a user with the 'doctor' role first.</p>}
+            {experts.length === 0 && <p className="text-center text-slate-400 py-10">No expert accounts found. Create a user with the 'expert' role first.</p>}
 
           </div>
         )}
@@ -911,7 +1036,7 @@ const AdminDashboard = () => {
               {blogs.map((blog) => (
                 <div key={blog._id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <div className="aspect-video bg-slate-100">
-                    {blog.coverImage && <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover" />}
+                    {blog.coverImage && <img src={resolveImageUrl(blog.coverImage)} alt={blog.title} className="w-full h-full object-cover" />}
                   </div>
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -959,7 +1084,7 @@ const AdminDashboard = () => {
                   className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-primary"
                 >
                   <option value="patient">Patients Only</option>
-                  <option value="doctor">Doctors Only</option>
+                  <option value="expert">experts Only</option>
                   <option value="admin">Admins Only</option>
                   <option value="">All Users</option>
                 </select>
@@ -990,7 +1115,7 @@ const AdminDashboard = () => {
                           onChange={(e) => handleRoleChange(u._id, e.target.value)}
                           className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-primary"
                         >
-                          {['patient', 'doctor', 'admin'].map(r => <option key={r} value={r}>{r}</option>)}
+                          {['patient', 'expert', 'admin'].map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
                       </td>
                       <td className="px-4 py-3">

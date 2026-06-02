@@ -9,13 +9,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoginPending, setIsLoginPending] = useState(false);
 
   // Listen to Firebase Auth state for background persistence
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
-          const res = await authAPI.verifyFirebase();
+          const token = await firebaseUser.getIdToken(true);
+          const res = await authAPI.verifyFirebase(token);
           setUser(res.data.user);
           setIsAuthenticated(true);
         } else {
@@ -35,24 +37,45 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async () => {
+    if (isLoginPending) return;
+    setIsLoginPending(true);
+
     try {
-      // 1. Trigger Firebase Popup
-      await signInWithPopup(auth, googleProvider);
-      
-      // 2. Immediately force backend verification
-      const res = await authAPI.verifyFirebase();
+      // 1. Trigger Firebase Popup and get the signed-in user token.
+      const credential = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = credential.user;
+      if (!firebaseUser) {
+        throw new Error('Firebase login did not return a user object.');
+      }
+
+      const token = await firebaseUser.getIdToken(true);
+      if (!token) {
+        throw new Error('Unable to obtain Firebase ID token.');
+      }
+
+      // 2. Immediately force backend verification with the token.
+      const res = await authAPI.verifyFirebase(token);
       const loggedInUser = res.data.user;
-      
+
       setUser(loggedInUser);
       setIsAuthenticated(true);
 
-      // 3. Force redirect to dashboard so the user feels the transition
-      const paths = { admin: '/dashboard/admin', doctor: '/dashboard/doctor', patient: '/dashboard/patient' };
+      // 3. Force redirect to dashboard so the user feels the transition.
+      const paths = { admin: '/dashboard/admin', expert: '/dashboard/expert', patient: '/dashboard/patient' };
       window.location.href = paths[loggedInUser.role] || '/dashboard/patient';
-
     } catch (err) {
-      console.error("Login sequence failed:", err);
-      alert("Login sequence failed: " + (err.message || 'Network Error. Is the backend running?'));
+      console.error('Login sequence failed:', err);
+      let message = err.message || err.response?.data?.error || 'Network Error. Is the backend running?';
+      if (err.code === 'auth/cancelled-popup-request') {
+        message = 'Login popup was cancelled. Please try again.';
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        message = 'Login popup was closed before sign-in completed. Please try again.';
+      } else if (err.code === 'auth/popup-blocked') {
+        message = 'Popup blocked by your browser. Please allow popups and try again.';
+      }
+      alert('Login sequence failed: ' + message);
+    } finally {
+      setIsLoginPending(false);
     }
   };
 
@@ -77,7 +100,7 @@ export const AuthProvider = ({ children }) => {
 
   // Helpers
   const isAdmin = user?.role === 'admin';
-  const isDoctor = user?.role === 'doctor';
+  const isExpert = user?.role === 'expert';
   const isPatient = user?.role === 'patient';
   const hasRole = (...roles) => roles.includes(user?.role);
 
@@ -94,13 +117,14 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         isAuthenticated,
         isAdmin,
-        isDoctor,
+        isExpert,
         isPatient,
         hasRole,
         login,
         logout,
         updateProfile,
         getDashboardPath,
+        isLoginPending,
       }}
     >
       {children}

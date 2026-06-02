@@ -9,17 +9,14 @@ const { uploadExpertImage, bufferToBase64, deleteFile } = require('../middleware
 const router = express.Router();
 
 /**
- * GET /api/experts
- * Public: Get all active experts sorted by order
+ * GET /api/experts/all
+ * Admin: Get all experts including inactive
  */
-router.get('/', async (req, res, next) => {
+router.get('/all', protect, requireRole('admin', 'expert'), async (req, res, next) => {
   try {
-    const experts = await Expert.find({ isActive: { $ne: false } })
+    const experts = await Expert.find()
       .sort({ order: 1, createdAt: 1 })
-
-      .populate('linkedUserId', 'name email photo phone');
-
-
+      .populate('linkedUserId', 'name email photo role phone');
     res.json({ success: true, experts });
   } catch (err) {
     next(err);
@@ -27,16 +24,14 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
- * GET /api/experts/all
- * Admin: Get all experts including inactive
+ * GET /api/experts
+ * Public: Get all active experts sorted by order
  */
-router.get('/all', protect, requireRole('admin', 'doctor'), async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const experts = await Expert.find()
+    const experts = await Expert.find({ isActive: { $ne: false } })
       .sort({ order: 1, createdAt: 1 })
-      .populate('linkedUserId', 'name email photo role phone');
-
-
+      .populate('linkedUserId', 'name email photo phone');
     res.json({ success: true, experts });
   } catch (err) {
     next(err);
@@ -45,9 +40,9 @@ router.get('/all', protect, requireRole('admin', 'doctor'), async (req, res, nex
 
 /**
  * GET /api/experts/me
- * Doctor/Admin: Get currently logged-in user's expert profile
+ * Expert/Admin: Get currently logged-in user's expert profile
  */
-router.get('/me', protect, requireRole('doctor', 'admin'), async (req, res, next) => {
+router.get('/me', protect, requireRole('expert', 'admin'), async (req, res, next) => {
   try {
     const expert = await Expert.findOne({ linkedUserId: req.user._id });
     if (!expert) return res.status(404).json({ error: 'No expert profile found for your account.' });
@@ -59,12 +54,12 @@ router.get('/me', protect, requireRole('doctor', 'admin'), async (req, res, next
 
 /**
  * PUT /api/experts/me
- * Doctor/Admin: Create or update currently logged-in user's expert profile
+ * Expert/Admin: Create or update currently logged-in user's expert profile
  */
 router.put(
   '/me',
   protect,
-  requireRole('doctor', 'admin'),
+  requireRole('expert', 'admin'),
   uploadExpertImage.single('image'),
   async (req, res, next) => {
     try {

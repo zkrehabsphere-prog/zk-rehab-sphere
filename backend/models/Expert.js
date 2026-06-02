@@ -42,7 +42,7 @@ const expertSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    // Optional: link to a User account (for doctor login)
+    // Optional: link to a User account (for expert login)
     linkedUserId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

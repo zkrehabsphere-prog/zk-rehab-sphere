@@ -61,7 +61,7 @@ const AddSlotForm = ({ user, onCreated }) => {
                             
     setLoading(true);
     try {
-      await slotsAPI.create({ doctorId: user.id || user._id, date: form.date, times: form.times });
+      await slotsAPI.create({ expertId: user.id || user._id, date: form.date, times: form.times });
       setMsg(`✅ Slots created!`);
       setForm({ date: '', times: [] });
       if (onCreated) onCreated();
@@ -256,14 +256,14 @@ const DoctorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <SEO title="Doctor Dashboard — ZK Rehab Sphere" />
+      <SEO title="Expert Dashboard — ZK Rehab Sphere" />
 
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <Activity size={20} className="text-primary" /> Doctor Dashboard
+              <Activity size={20} className="text-primary" /> Expert Dashboard
             </h1>
             <p className="text-slate-500 text-sm">Welcome, {user?.name}</p>
           </div>

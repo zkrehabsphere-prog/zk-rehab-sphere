@@ -9,10 +9,10 @@ import Contact from '../pages/Contact';
 import LoginPage from '../pages/LoginPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AdminDashboard from '../pages/dashboard/AdminDashboard';
-import DoctorDashboard from '../pages/dashboard/DoctorDashboard';
+import ExpertDashboard from '../pages/dashboard/ExpertDashboard';
 import PatientDashboard from '../pages/dashboard/PatientDashboard';
 import Profile from '../pages/Profile';
-import DoctorProfile from '../pages/DoctorProfile';
+import ExpertProfile from '../pages/ExpertProfile';
 import ExpertFormPage from '../pages/dashboard/ExpertFormPage';
 import Blog from '../pages/Blog';
 import BlogPostPage from '../pages/BlogPostPage';
@@ -25,7 +25,7 @@ const DashboardRedirect = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  const paths = { admin: '/dashboard/admin', doctor: '/dashboard/doctor', patient: '/dashboard/patient' };
+  const paths = { admin: '/dashboard/admin', expert: '/dashboard/expert', patient: '/dashboard/patient' };
   return <Navigate to={paths[user.role] || '/'} replace />;
 };
 
@@ -37,7 +37,7 @@ const AppRoutes = () => {
       <Route path="/about" element={<About />} />
       <Route path="/services" element={<Services />} />
       <Route path="/experts" element={<Experts />} />
-      <Route path="/experts/:id" element={<DoctorProfile />} />
+      <Route path="/experts/:id" element={<ExpertProfile />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/resources" element={<Resources />} />
@@ -48,7 +48,7 @@ const AppRoutes = () => {
       <Route
         path="/profile"
         element={
-          <ProtectedRoute roles={['admin', 'doctor', 'patient']}>
+          <ProtectedRoute roles={['admin', 'expert', 'patient']}>
             <Profile />
           </ProtectedRoute>
         }
@@ -100,10 +100,10 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/dashboard/doctor"
+        path="/dashboard/expert"
         element={
-          <ProtectedRoute roles={['doctor']}>
-            <DoctorDashboard />
+          <ProtectedRoute roles={['expert']}>
+            <ExpertDashboard />
           </ProtectedRoute>
         }
       />

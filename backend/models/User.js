@@ -23,10 +23,32 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    role: {
+    coverImage: {
       type: String,
-      enum: ['admin', 'doctor', 'patient'],
-      default: 'patient',
+      default: '',
+    },
+    profileTitle: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    profileTag: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    bio: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    username: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      unique: false,
+      sparse: true,
+      default: '',
     },
     phone: {
       type: String,
@@ -38,17 +60,112 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
     gender: {
       type: String,
       enum: ['Male', 'Female', 'Other', ''],
       default: '',
     },
+    dob: {
+      type: Date,
+      default: null,
+    },
+    bloodGroup: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    qualification: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    experience: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    specialization: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    languages: [{ type: String, trim: true }],
+    city: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    country: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    pincode: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    emergencyContact: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    clinicName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    department: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    position: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    registrationNumber: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    role: {
+      type: String,
+      enum: ['admin', 'expert', 'patient'],
+      default: 'patient',
+      trim: true,
+      lowercase: true,
+    },
+    expertiseAreas: [{ type: String, trim: true }],
+    socialLinks: {
+      linkedIn: { type: String, trim: true, default: '' },
+      instagram: { type: String, trim: true, default: '' },
+      facebook: { type: String, trim: true, default: '' },
+      website: { type: String, trim: true, default: '' },
+      youtube: { type: String, trim: true, default: '' },
+    },
+    preferences: {
+      darkMode: { type: Boolean, default: false },
+      emailNotifications: { type: Boolean, default: true },
+      smsNotifications: { type: Boolean, default: false },
+      appointmentAlerts: { type: Boolean, default: true },
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
     age: {
       type: Number,
+      default: null,
+    },
+    lastLogin: {
+      type: Date,
       default: null,
     },
 

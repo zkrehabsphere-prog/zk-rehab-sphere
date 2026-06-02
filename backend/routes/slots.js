@@ -11,11 +11,11 @@ const router = express.Router();
 /**
  * GET /api/slots
  * Public: Get available (not booked) slots for a given date or all upcoming slots
- * Query params: date (YYYY-MM-DD), doctorId
+ * Query params: date (YYYY-MM-DD), expertId
  */
 router.get('/', async (req, res, next) => {
   try {
-    const { date, doctorId } = req.query;
+    const { date, expertId } = req.query;
 
     const filter = { isActive: true };
 
@@ -27,10 +27,10 @@ router.get('/', async (req, res, next) => {
       filter.date = { $gte: today };
     }
 
-    if (doctorId) filter.doctor = doctorId;
+    if (expertId) filter.expert = expertId;
 
     const slots = await Slot.find(filter)
-      .populate('doctor', 'name email photo')
+      .populate('expert', 'name email photo')
       .sort({ date: 1, time: 1 });
 
     res.json({ success: true, slots });
@@ -53,7 +53,7 @@ router.get('/available', async (req, res, next) => {
       isActive: true,
       date: { $gte: today },
     })
-      .populate('doctor', 'name photo')
+      .populate('expert', 'name photo')
       .sort({ date: 1, time: 1 });
 
     // 2. Identify and DELETE past slots (Auto-Cleanup)
@@ -76,27 +76,32 @@ router.get('/available', async (req, res, next) => {
 
 /**
  * POST /api/slots
- * Admin or Doctor: Create one or more slots
- * Body: { doctorId, date, times: ['10:00 AM', '11:30 AM'] }
+ * Admin or Expert: Create one or more slots
+ * Body: { expertId, date, times: ['10:00 AM', '11:30 AM'] }
+ * If admin omits expertId, the slot is created as an open slot.
  */
-router.post('/', protect, requireRole('admin', 'doctor'), async (req, res, next) => {
+router.post('/', protect, requireRole('admin', 'expert'), async (req, res, next) => {
   try {
-    const { doctorId, date, times } = req.body;
+    const { expertId, date, times } = req.body;
 
     if (!date || !times || !Array.isArray(times) || times.length === 0) {
       return res.status(400).json({ error: 'date and times array are required.' });
     }
 
-    // Doctors can only create slots for themselves
-    let resolvedDoctorId = doctorId;
-    if (req.user.role === 'doctor') {
-      resolvedDoctorId = req.user._id.toString();
+    // Experts can only create slots for themselves.
+    let resolvedExpertId = expertId;
+    if (req.user.role === 'expert') {
+      resolvedExpertId = req.user._id.toString();
     }
 
-    // Validate doctor exists
-    const doctor = await User.findById(resolvedDoctorId);
-    if (!doctor || doctor.role === 'patient') {
-      return res.status(400).json({ error: 'Invalid doctor ID.' });
+    let expert = null;
+    if (resolvedExpertId) {
+      expert = await User.findById(resolvedExpertId);
+      if (!expert || expert.role === 'patient') {
+        return res.status(400).json({ error: 'Invalid expert ID.' });
+      }
+    } else if (req.user.role !== 'admin') {
+      return res.status(400).json({ error: 'Expert ID is required when creating slots as an expert.' });
     }
 
     // Validate that the date is not in the past
@@ -110,7 +115,7 @@ router.post('/', protect, requireRole('admin', 'doctor'), async (req, res, next)
       .map(time => time.trim())
       .filter(time => !isSlotInPast(date, time)) // Filter out past times for today
       .map((time) => ({
-        doctor: resolvedDoctorId,
+        expert: resolvedExpertId || null,
         date,
         time,
       }));
@@ -160,10 +165,25 @@ router.patch('/:id', protect, requireRole('admin', 'doctor'), async (req, res, n
       return res.status(400).json({ error: 'Cannot modify a slot that is already booked.' });
     }
 
-    const { date, time, isActive } = req.body;
+    const { date, time, isActive, expertId } = req.body;
     if (date) slot.date = date;
     if (time) slot.time = time;
     if (isActive !== undefined) slot.isActive = isActive;
+
+    if (expertId !== undefined) {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Only admins can assign or change slot experts.' });
+      }
+      if (expertId) {
+        const newExpert = await User.findById(expertId);
+        if (!newExpert || newExpert.role === 'patient') {
+          return res.status(400).json({ error: 'Invalid expert ID.' });
+        }
+        slot.expert = newExpert._id;
+      } else {
+        slot.expert = null;
+      }
+    }
 
     await slot.save();
     res.json({ success: true, slot });

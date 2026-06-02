@@ -14,6 +14,7 @@ const Expert = require('./models/Expert');
 const Slot = require('./models/Slot');
 const Resource = require('./models/Resource');
 const User = require('./models/User');
+const BlogPost = require('./models/BlogPost');
 
 const connectDB = async () => {
   await mongoose.connect(process.env.MONGODB_URI);
@@ -117,8 +118,42 @@ const resourcesData = [
   },
 ];
 
+// ─── Blog Posts Seed Data ───────────────────────────────────────────────────────
+const blogsData = [
+  {
+    title: 'The Future of Physiotherapy',
+    slug: 'the-future-of-physiotherapy',
+    summary: 'Discover how technology and evidence-based practices are shaping the future of rehabilitation.',
+    content: '<p>The future of physiotherapy is evolving rapidly with new technologies...</p>',
+    coverImage: '/uploads/resources/default.jpg',
+    tags: ['future', 'technology'],
+    status: 'published',
+    publishedAt: new Date(),
+    author: {
+      name: 'Dr. Mehul Kumar',
+      role: 'Senior Physiotherapist',
+      image: '/uploads/experts/expert-mehul.jpeg'
+    }
+  },
+  {
+    title: '5 Tips for Better Posture',
+    slug: '5-tips-for-better-posture',
+    summary: 'Improve your daily posture with these simple and effective ergonomic tips.',
+    content: '<p>Good posture is essential for preventing back and neck pain. Here are 5 tips...</p>',
+    coverImage: '/uploads/resources/default.jpg',
+    tags: ['posture', 'ergonomics'],
+    status: 'published',
+    publishedAt: new Date(),
+    author: {
+      name: 'Dr. Mani Bhusan PT',
+      role: 'Physiotherapist',
+      image: '/uploads/experts/expert-mani.jpeg'
+    }
+  }
+];
+
 // ─── Generate Slots for Next 7 Days ───────────────────────────────────────────
-const generateSlots = (doctorId) => {
+const generateSlots = (expertId) => {
   const slots = [];
   const times = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'];
 
@@ -130,7 +165,7 @@ const generateSlots = (doctorId) => {
 
     const dateStr = d.toISOString().split('T')[0];
     times.forEach((time) => {
-      slots.push({ doctor: doctorId, date: dateStr, time, isBooked: false, isActive: true });
+      slots.push({ expert: expertId, date: dateStr, time, isBooked: false, isActive: true });
     });
   }
   return slots;
@@ -146,6 +181,7 @@ const seed = async () => {
     await Expert.deleteMany({});
     await Resource.deleteMany({});
     await Slot.deleteMany({});
+    await BlogPost.deleteMany({});
 
     // Seed Experts
     console.log('👨‍⚕️ Seeding expert profiles...');
@@ -157,16 +193,21 @@ const seed = async () => {
     const resources = await Resource.insertMany(resourcesData);
     console.log(`   ✅ Created ${resources.length} resources`);
 
-    // Seed Slots (find doctor users, or create slots without linking — admin will link later)
-    console.log('📅 Seeding appointment slots...');
-    const doctorUsers = await User.find({ role: { $in: ['admin', 'doctor'] } }).limit(1);
+    // Seed Blogs
+    console.log('📝 Seeding blogs...');
+    const blogs = await BlogPost.insertMany(blogsData);
+    console.log(`   ✅ Created ${blogs.length} blog posts`);
 
-    if (doctorUsers.length > 0) {
-      const sampleSlots = generateSlots(doctorUsers[0]._id);
+    // Seed Slots (find expert users, or create slots without linking — admin will link later)
+    console.log('📅 Seeding appointment slots...');
+    const expertUsers = await User.find({ role: { $in: ['admin', 'expert'] } }).limit(1);
+
+    if (expertUsers.length > 0) {
+      const sampleSlots = generateSlots(expertUsers[0]._id);
       const slotResult = await Slot.insertMany(sampleSlots, { ordered: false });
-      console.log(`   ✅ Created ${slotResult.length} slots for ${doctorUsers[0].name}`);
+      console.log(`   ✅ Created ${slotResult.length} slots for ${expertUsers[0].name}`);
     } else {
-      console.log('   ⚠️  No doctor/admin users found. Slots not seeded. Login with admin Google account first, then re-run seed.');
+      console.log('   ⚠️  No expert/admin users found. Slots not seeded. Login with admin Google account first, then re-run seed.');
     }
 
     console.log('\n🎉 Seeding complete!\n');

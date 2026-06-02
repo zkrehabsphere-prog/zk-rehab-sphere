@@ -2,10 +2,10 @@ const mongoose = require('mongoose');
 
 const slotSchema = new mongoose.Schema(
   {
-    doctor: {
+    expert: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      default: null,
     },
     // Store date as a Date object (time portion is stripped)
     date: {
@@ -42,8 +42,11 @@ const slotSchema = new mongoose.Schema(
   }
 );
 
-// Compound index to prevent duplicate slots for same doctor at same time
-slotSchema.index({ doctor: 1, date: 1, time: 1 }, { unique: true });
+// Compound index to prevent duplicate slots for same expert at same time
+slotSchema.index(
+  { expert: 1, date: 1, time: 1 },
+  { unique: true, partialFilterExpression: { expert: { $exists: true, $ne: null } } }
+);
 slotSchema.index({ isBooked: 1, date: 1 });
 
 const Slot = mongoose.model('Slot', slotSchema);

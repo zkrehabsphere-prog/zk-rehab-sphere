@@ -7,7 +7,7 @@ const appointmentSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    doctor: {
+    expert: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
@@ -56,7 +56,7 @@ const appointmentSchema = new mongoose.Schema(
       enum: ['pending', 'confirmed', 'cancelled', 'completed'],
       default: 'pending',
     },
-    doctorNotes: {
+    expertNotes: {
       type: String,
       trim: true,
       default: '',
@@ -80,7 +80,7 @@ const appointmentSchema = new mongoose.Schema(
 );
 
 appointmentSchema.index({ patient: 1, createdAt: -1 });
-appointmentSchema.index({ doctor: 1, slotDate: 1 });
+appointmentSchema.index({ expert: 1, slotDate: 1 });
 appointmentSchema.index({ status: 1 });
 
 const Appointment = mongoose.model('Appointment', appointmentSchema);

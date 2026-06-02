@@ -5,7 +5,7 @@ import Card from '../components/Card';
 import SectionTitle from '../components/SectionTitle';
 import Button from '../components/Button';
 import SEO from '../components/SEO';
-import DoctorCard from '../components/DoctorCard';
+import ExpertCard from '../components/ExpertCard';
 import ExpertBioModal from '../components/ExpertBioModal';
 import { expertsAPI } from '../api/axios';
 
@@ -94,9 +94,9 @@ const Experts = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {expertData.map((expert) => (
-              <DoctorCard 
+              <ExpertCard 
                 key={expert._id} 
-                doctor={expert} 
+                expert={expert} 
                 onViewProfile={handleViewProfile} 
               />
             ))}

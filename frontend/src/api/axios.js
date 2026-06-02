@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { auth } from '../firebase';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_BASE_URL.endsWith('/api') ? API_BASE_URL : `${API_BASE_URL}/api`,
@@ -64,8 +64,12 @@ export default api;
 export const authAPI = {
   getMe: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
-  updateProfile: (data) => api.patch('/auth/profile', data),
-  verifyFirebase: () => api.post('/auth/verify'),
+  updateProfile: (data) => api.patch('/auth/profile', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadProfileImage: (formData) => api.post('/auth/profile-image', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadCoverImage: (formData) => api.post('/auth/cover-image', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  changePassword: (data) => api.patch('/auth/password', data),
+  getProfile: () => api.get('/auth/profile'),
+  verifyFirebase: (token) => api.post('/auth/verify', {}, token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
 };
 
 /** Appointments */
@@ -81,7 +85,8 @@ export const appointmentsAPI = {
 
 /** Slots */
 export const slotsAPI = {
-  getAvailable: () => api.get('/slots/available'),
+  // Accept optional params, e.g. { expertId, date }
+  getAvailable: (params) => api.get('/slots/available', { params }),
   getAll: (params) => api.get('/slots', { params }),
   create: (data) => api.post('/slots', data),
   update: (id, data) => api.patch(`/slots/${id}`, data),
@@ -140,10 +145,12 @@ export const usersAPI = {
 
 /** Blogs */
 export const blogsAPI = {
-  getPublished: () => api.get('/blogs'),
-  getAllAdmin: () => api.get('/blogs/all'),
+  getPublished: (params) => api.get('/blogs', { params }),
+  getAllAdmin: (params) => api.get('/blogs/all', { params }),
   getBySlug: (slug) => api.get(`/blogs/${slug}`),
-  create: (data) => api.post('/blogs', data),
-  update: (id, data) => api.put(`/blogs/${id}`, data),
+  create: (formData) => api.post('/blogs', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update: (id, formData) => api.put(`/blogs/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete: (id) => api.delete(`/blogs/${id}`),
+  like: (id) => api.post(`/blogs/${id}/like`),
+  share: (id) => api.post(`/blogs/${id}/share`),
 };
