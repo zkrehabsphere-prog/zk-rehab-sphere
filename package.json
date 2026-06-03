@@ -12,9 +12,5 @@
     "dev": "npm run dev --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "start": "npm start --workspace backend"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^5.1.1",
-    "vite": "^7.2.4"
   }
 }
