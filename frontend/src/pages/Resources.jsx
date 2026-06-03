@@ -5,7 +5,7 @@ import Button from '../components/Button';
 import SEO from '../components/SEO';
 import { resourcesAPI } from '../api/axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
 const categoryConfig = {
   blog: { icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/20', label: 'Blog Post' },

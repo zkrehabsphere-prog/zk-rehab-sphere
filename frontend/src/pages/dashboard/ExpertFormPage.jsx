@@ -153,7 +153,7 @@ const ExpertFormPage = () => {
               <div className="md:col-span-2 flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors relative group">
                 {imagePreview ? (
                   <div className="relative">
-                    <img src={imagePreview.startsWith('data') ? imagePreview : (imagePreview.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${imagePreview}` : imagePreview)} alt="Preview" className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md" />
+                    <img src={imagePreview.startsWith('data') ? imagePreview : (imagePreview.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '')}${imagePreview}` : imagePreview)} alt="Preview" className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md" />
                     <button 
                       type="button" 
                       onClick={() => { setImagePreview(null); setImageBase64(null); }}

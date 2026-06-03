@@ -252,7 +252,7 @@ const BlogPostPage = () => {
                           <p className="text-slate-500 text-sm">{item.summary}</p>
                         </div>
                       </Link>
-                    ))}}
+                    ))}
                   </div>
                 </div>
               )}

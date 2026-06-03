@@ -10,7 +10,7 @@ import { usersAPI, appointmentsAPI, contactAPI, expertsAPI, slotsAPI, newsletter
 import SEO from '../../components/SEO';
 import { resolveImageUrl } from '../../utils/imageUtils';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
 // ─── Stat Card ─────────────────────────────────────────────────────────────────
 const StatCard = ({ icon: Icon, label, value, color, bg }) => (
